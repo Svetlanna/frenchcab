@@ -43,5 +43,25 @@ jobs:
             # Redémarrer les conteneurs avec les nouvelles images
             docker compose up -d
 
+            # Attendre et valider le backend
+            echo "Waiting for backend"
+            for i in $(seq 1 30);do
+              if curl -f http://conteneur-back:3001/hello;then
+                echo "backend opérationnel après $i secondes."
+                break
+              fi
+              sleep 1
+            done
+
+            # En cas d'échec de la boucle
+            if [ $? -ne 0 ]; then
+              echo "Échec de la connexion au backend après 30 secondes. Arrêt du déploiement."
+              exit 1
+            fi
+
+            # Vérifier le frontend
+            curl --fail http://conteneur-front:80/
+
             # Vérifier l'état des conteneurs
+            echo "Déploiement réussi : services opérationnels."
             docker compose ps

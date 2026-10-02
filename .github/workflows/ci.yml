@@ -61,7 +61,7 @@ jobs:
       - name: 8. Tester le backend
         run: |
           for i in $(seq 1 30); do
-            if curl -f http://conteneur-back:3001/hello/ ; then
+            if curl -f http://conteneur-back:3001/hello ; then
               echo "Backend disponible !"
               exit 0
             fi
@@ -76,13 +76,13 @@ jobs:
       # 9. Tester l'API
       - name: 9. Tester les endpoints
         run: |
-          curl --fail https://conteneur-back:3001/hello/
+          curl --fail http://conteneur-back:3001/hello/
          
 
       # 10. Tester le frontend
       - name: 10. Tester le frontend
         run: |
-          curl --fail https://conteneur-front:4200/
+          curl --fail http://conteneur-front:80/
 
       # 11. Afficher les logs en cas de problème
       - name: 11. Afficher les logs
