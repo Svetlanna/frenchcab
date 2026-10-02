@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from Taxi_PichkupHour import CHEMIN_MODELE, DEFAULT_DB
-from taxti_dure_prediction import charger_courses, charger_modele, predire
+from taxi_duree_prediction.py import charger_courses, charger_modele, predire
 
 app = FastAPI(title="FrenchCab - prédiction durée")
 

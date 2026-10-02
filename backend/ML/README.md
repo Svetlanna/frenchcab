@@ -9,7 +9,7 @@ backend/
 └── ML/
     ├── Taxi_PichkupHour.py          ← 1. entraînement du modèle
     ├── modele_duree_trajet.joblib   ←    modèle sauvegardé
-    ├── taxti_dure_prediction.py     ← 2. prédiction d'une course par uid_trajet
+    ├── taxi_duree_prediction.py.py     ← 2. prédiction d'une course par uid_trajet
     ├── api_prediction.py            ← 3. API FastAPI
     ├── requirements.txt             ← 4. dépendances Python
     ├── Dockerfile                   ← 4. image Docker de l'API
@@ -21,7 +21,7 @@ Le chemin complet :
 ```
 frenchcab.db ──► Taxi_PichkupHour.py ──► modele_duree_trajet.joblib
                                                │
-                       taxti_dure_prediction.py ◄┘
+                       taxi_duree_prediction.py.py ◄┘
                                 │
                        api_prediction.py (FastAPI, port 8000)
                                 │
@@ -87,7 +87,7 @@ python Taxi_PichkupHour.py 2000000          # échantillon plus grand (0 = toute
 python Taxi_PichkupHour.py --sans-distance  # seulement les zones et l'heure
 ```
 
-## 2. La prédiction — `taxti_dure_prediction.py`
+## 2. La prédiction — `taxi_duree_prediction.py.py`
 
 Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien
 
@@ -110,7 +110,7 @@ Points importants :
 
 ```bash
 cd backend/ML
-python taxti_dure_prediction.py      # lance prediction(20)
+python taxi_duree_prediction.py.py      # lance prediction(20)
 ```
 
 Résultat :
@@ -233,6 +233,6 @@ Puis ouvrir [http://localhost:8000/api/prediction/13](http://localhost:8000/api/
 ## Ordre de lancement (résumé)
 
 1. `python Taxi_PichkupHour.py` → crée le modèle `.joblib` (seulement si les données changent)
-2. `python taxti_dure_prediction.py` → vérifie qu'une prédiction marche
+2. `python taxi_duree_prediction.py.py` → vérifie qu'une prédiction marche
 3. `uvicorn api_prediction:app --port 8000` → vérifie l'API sans Docker
 4. `docker compose up --build` → lance tout : backend, ml et frontend
