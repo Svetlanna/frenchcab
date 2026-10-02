@@ -208,6 +208,13 @@ jour de départ (0 = lundi, 6 = dimanche)
 Incohérences entre colonnes et tables sql -> ajouter les quelques colonnes manquantes dans la table "trajets" et  s'assurer de la présence du champ `uid_trajet` qui est un identifiant unique auutoincrémenté et fait office de clé primaire.
 
 
+## Creation  de la base 
+- Créer une base vide 'frenchcab.db' dans le dossier /backend/data
+- Executer les fichiers extraction.py puis load_taxi_data.py dans /backend/etl
+    - py extraction.py
+    - py load_taxi_data.py
+
+
 ## Backend Node.js
 
 ### routes
