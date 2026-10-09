@@ -6,7 +6,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-     - ./backend:/app
+     - ./data:/app/data 
     restart: always
 
   frontend:
