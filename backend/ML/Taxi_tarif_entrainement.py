@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "data" / "frenchcab.db"
 CHEMIN_MODELE_TARIF = Path(__file__).resolve().parent.parent / "modele" / "modele_frais_trajet.joblib"
 
-from Taxi_PichkupHour import (DEFAULT_DB, GRAINE, NOMS_ZONES, TABLE_TRAJETS, TABLE_ZONES, VARIABLES_CATEGORIELLES, VARIABLES_LOCATIONS, VARIABLES_NUMERIQUES, construire_variables, creer_pipeline, evaluer)
+from Taxi_PichkupHour import (DEFAULT_DB, GRAINE, NOMS_ZONES, TABLE_TRAJETS, TABLE_ZONES, VARIABLES_CATEGORIELLES, VARIABLES_LOCATIONS, VARIABLES_NUMERIQUES, construire_variables, creer_pipeline, evaluer2)
 
 def charger_donnees_tarif(db_path: Path, echantillon: int) -> pd.DataFrame:
     with sqlite3.connect(db_path) as conn:
@@ -77,16 +77,16 @@ def main() -> None:
 
     print("baselines")
     naif = DummyRegressor(strategy="median").fit(X_train, y_train)
-    evaluer("baseline toujours la médiane", y_test, naif.predict(X_test))
+    evaluer2("baseline toujours la médiane", y_test, naif.predict(X_test))
 
     mediane_paire = y_train.groupby(X_train["trajet_zones"]).median()
     pred_paire = X_test["trajet_zones"].map(mediane_paire).fillna(y_train.median())
-    evaluer("baseline médiane par paire de zones", y_test, pred_paire)
+    evaluer2("baseline médiane par paire de zones", y_test, pred_paire)
 
     print("entrainement du gradient boosting")
     pipeline = creer_pipeline(VARIABLES_NUMERIQUES).fit(X_train, y_train)
-    evaluer("gradient boosting, train", y_train, pipeline.predict(X_train))
-    evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
+    evaluer2("gradient boosting, train", y_train, pipeline.predict(X_train))
+    evaluer2("gradient boosting, test", y_test, pipeline.predict(X_test))
 
     joblib.dump(pipeline, CHEMIN_MODELE_TARIF)
     print(f"Modèle sauvegardé : {CHEMIN_MODELE_TARIF} ({time.time() - t0:.0f}s)")
