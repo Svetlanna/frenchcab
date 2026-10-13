@@ -345,3 +345,102 @@ Puis ouvrir [http://localhost:8000/api/prediction/13](http://localhost:8000/api/
 2. `python taxi_duree_prediction.py.py` → vérifie qu'une prédiction marche
 3. `uvicorn api_prediction:app --port 8000` → vérifie l'API sans Docker
 4. `docker compose up --build` → lance tout : backend, ml et frontend
+
+
+## 5. Identification, évaluation et contrôle qualité du modèle
+
+### Identifier le modèle utilisé
+
+Les informations sont stockées dans `backend/modele_duree_trajet.meta.json`, à côté du modèle, et exposées par l'API :
+
+```
+GET /modele                      (backend, port 3001)
+GET /prediction/modele           (gateway, port 3000)
+```
+
+Exemple de réponse :
+
+```json
+{
+  "version": "c3cecda3ba02",
+  "date_entrainement": "2026-10-13T13:16:35",
+  "date_entrainement_source": "date_fichier",
+  "mae_minutes": 3.921,
+  "mae_source": "evaluation",
+  "jeu_evaluation": "tlc_eval_2026-01.csv",
+  "metadonnees_a_jour": true
+}
+```
+
+* `version` : 12 premiers caractères du SHA-256 du fichier `.joblib` réellement chargé. Elle est recalculée au démarrage : un modèle remplacé change automatiquement de version.
+* `date_entrainement` : écrite par le script d'entraînement (`date_entrainement_source = "entrainement"`). Pour un modèle livré avant l'ajout des métadonnées, c'est la date du fichier (`"date_fichier"`).
+* `mae_minutes` : MAE du jeu TLC d'évaluation (`mae_source = "evaluation"`), ou à défaut MAE du jeu de test de l'entraînement (`"test_entrainement"`).
+* Le fichier meta n'est repris que si son empreinte correspond au modèle chargé. Sinon `metadonnees_a_jour` vaut `false` et la date et la MAE restent `null` : les infos d'un ancien modèle ne sont jamais attribuées à un autre.
+
+Chaque réponse de `/prediction` contient aussi `modele_version`.
+
+### Évaluer le modèle (sans réentraînement) — `evaluation_modele.py`
+
+```bash
+cd backend/ML
+python evaluation_modele.py --sortie rapport.json
+```
+
+Le script :
+
+1. charge le modèle existant (`modele_duree_trajet.joblib`), sans le réentraîner ;
+2. lit un jeu de courses TLC distinct des données d'entraînement : `backend/eval/tlc_eval_2026-01.csv` (20 000 courses de janvier 2026, le modèle étant entraîné sur 2023) ;
+3. calcule la durée réelle (arrivée - départ, en minutes), nettoie les courses aberrantes avec les mêmes règles que l'entraînement, puis prédit chaque durée ;
+4. compare prédictions et durées réelles et produit un rapport JSON (console et fichier `--sortie`).
+
+Extrait du rapport :
+
+```json
+"metriques": {
+  "mae_minutes": 3.921,
+  "rmse_minutes": 7.174,
+  "r2": 0.7225,
+  "mae_baseline_mediane_minutes": 8.852
+}
+```
+
+`mae_baseline_mediane_minutes` est la MAE d'un prédicteur qui répondrait toujours la durée médiane : c'est le point de comparaison du seuil.
+
+| Option | Rôle |
+|---|---|
+| `--donnees <fichier>` | autre jeu TLC (CSV ou parquet ; parquet demande `pyarrow`) avec les colonnes `tpep_pickup_datetime`, `tpep_dropoff_datetime`, `trip_distance`, `PULocationID`, `DOLocationID` |
+| `--zones <fichier>` | `taxi_zone_lookup.csv` (par défaut `backend/eval/taxi_zone_lookup.csv`) |
+| `--echantillon N` | n'évalue que N courses (0 = toutes) |
+| `--sortie <fichier>` | écrit le rapport JSON |
+| `--maj-metadonnees` | enregistre la MAE dans `modele_duree_trajet.meta.json`, donc dans `/modele` |
+
+### Contrôle automatique du seuil — `controle_qualite.py`
+
+```bash
+python controle_qualite.py              # évalue puis compare au seuil
+python controle_qualite.py --seuil 4.5  # seuil explicite
+python controle_qualite.py --rapport rapport.json   # à partir d'un rapport existant
+```
+
+| Code retour | Signification |
+|---|---|
+| `0` | MAE <= seuil |
+| `1` | MAE > seuil : échec qualité, la CI échoue |
+| `2` | erreur technique (modèle, données ou rapport introuvables) |
+
+Le seuil (5,0 min) et sa justification sont dans `seuil_qualite.json` : environ 25 % de marge sur la MAE mesurée (3,92 min) et nettement sous la baseline (8,85 min), au-delà de laquelle le modèle n'apporterait plus de gain réel. À revoir si le modèle ou le jeu d'évaluation change.
+
+### Tests et CI
+
+* Tests : `cd backend && python -m pytest` (7 tests dont la vérification du seuil sur un échantillon).
+* Pipeline `.github/workflows/ci-cd.yml` : `qualite-modele` (tests + contrôle de la MAE), puis `build-and-push` (images Docker Hub), puis `deploy` (VM). Si le contrôle échoue, rien n'est construit ni déployé.
+
+### Après un réentraînement
+
+```bash
+python Taxi_PichkupHour.py 200000
+python evaluation_modele.py --maj-metadonnees
+curl http://localhost:3001/modele
+```
+
+La version change, la date d'entraînement est enregistrée et la MAE sur le jeu TLC est mise à jour. Commiter ensuite le `.joblib` et son `.meta.json` ensemble.
