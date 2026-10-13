@@ -232,11 +232,31 @@ def creer_pipeline(numeriques: list[str]) -> Pipeline:
     return Pipeline([("pretraitement", pretraitement), ("modele", modele)])
 
 
+def fmt_min_sec(minutes: float) -> str:
+    total_sec = round(minutes * 60)
+    m, s = divmod(total_sec, 60)
+    return f"{m:2d} min {s:02d} s"
+
+
 def evaluer(nom: str, y_vrai, y_pred) -> dict:
     mae = mean_absolute_error(y_vrai, y_pred)
     rmse = root_mean_squared_error(y_vrai, y_pred)
     r2 = r2_score(y_vrai, y_pred)
-    print(f"  {nom:<36} mae = {mae:5.2f} min | rmse = {rmse:5.2f} min | r2 = {r2:5.3f}")
+
+    print(
+        f"  {nom:<36} mae = {fmt_min_sec(mae)} | "
+        f"rmse = {fmt_min_sec(rmse)} | r2 = {r2:5.3f}"
+    )
+    return {"mae": mae, "rmse": rmse, "r2": r2}
+
+
+
+
+def evaluer2(nom: str, y_vrai, y_pred) -> dict:
+    mae = mean_absolute_error(y_vrai, y_pred)
+    rmse = root_mean_squared_error(y_vrai, y_pred)
+    r2 = r2_score(y_vrai, y_pred)
+    print(f"  {nom:<36} mae = {mae:5.2f} $ | rmse = {rmse:5.2f} $ | r2 = {r2:5.3f}")
     return {"mae": mae, "rmse": rmse, "r2": r2}
 
 
@@ -260,9 +280,9 @@ def main() -> None:
     y = df["trip_duration_min"]
 
     print(
-        f"durée moyenne = {y.mean():.1f} min | "
-        f"médiane = {y.median():.1f} min"
-    )
+    f"durée moyenne = {fmt_min_sec(y.mean())} | "
+    f"médiane = {fmt_min_sec(y.median())}"
+)
 
     # train / test
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=GRAINE)
