@@ -1,5 +1,4 @@
 const axios = require("axios");
-const bdd = require("../../connexion.js");
 
 const PYTHON_SERVICE_URL = process.env.BACKEND_URL || "http://backend:3001";
 
@@ -24,52 +23,27 @@ async function getTests() {
 
 
 // -------------------------------------
-// COURSE PAR ID
+// COURSE PAR ID (via le backend, seul à accéder à la BDD)
 // -------------------------------------
 
-function getTrouverCourseParId(uid_trajet) {
-
-    return new Promise((resolve, reject) => {
-
-        bdd.get(
-            `SELECT * FROM trajets
-             WHERE uid_trajet = ?`,
-            [uid_trajet],
-            (err, result) => {
-
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve(result);
-            }
-        );
-    });
+async function getTrouverCourseParId(uid_trajet) {
+    try {
+        const response = await axios.get(`${PYTHON_SERVICE_URL}/courseID`, { params: { uid_trajet } });
+        return response.data;
+    } catch (error) {
+        if (error.response?.status === 404) return null;
+        throw error;
+    }
 }
 
 
 // -------------------------------------
-// LISTE DES COURSES
+// LISTE DES COURSES (via le backend)
 // -------------------------------------
 
-function getCourses(limit, offset) {
-
-    return new Promise((resolve, reject) => {
-
-        bdd.all(
-            `SELECT * FROM trajets
-             LIMIT ? OFFSET ?`,
-            [limit, offset],
-            (err, result) => {
-
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve(result);
-            }
-        );
-    });
+async function getCourses(limit, offset) {
+    const response = await axios.get(`${PYTHON_SERVICE_URL}/courses`, { params: { limit, offset } });
+    return response.data;
 }
 
 
