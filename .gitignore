@@ -11,3 +11,4 @@ __pycache__/
 backend/ML/modele_duree_trajet.joblib
 *.env
 *.joblib
+backend/ML/rapport_evaluation.json

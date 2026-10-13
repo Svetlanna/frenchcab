@@ -19,5 +19,3 @@ services:
   gateway:
     build: ./gateway
     container_name: conteneur-gateway
-    volumes : 
-      - ./backend/data/clean:/app/backend/data/clean

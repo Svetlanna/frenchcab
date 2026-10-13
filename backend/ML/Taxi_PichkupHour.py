@@ -33,7 +33,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "data" / "frenchcab.db"
-CHEMIN_MODELE = BASE_DIR / "modele" / "modele_duree_trajet.joblib"
+CHEMIN_MODELE = BASE_DIR  / "modele_duree_trajet.joblib"
 
 TABLE_ZONES = "localisations"
 TABLE_TRAJETS = "trajets"
@@ -327,7 +327,7 @@ def main() -> None:
 
     print("evaluation")
     evaluer("gradient boosting, train", y_train, pipeline.predict(X_train))
-    evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
+    metriques_test = evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
 
     # -------------------------
     # Importance des variables
@@ -353,6 +353,17 @@ def main() -> None:
     # -------------------------
 
     joblib.dump(pipeline, CHEMIN_MODELE)
+
+    # identification du modèle : date d'entraînement + MAE sur le jeu de test
+    from datetime import datetime
+    from modele_info import ecrire_meta
+    ecrire_meta(
+        CHEMIN_MODELE,
+        date_entrainement=datetime.now().isoformat(timespec="seconds"),
+        date_entrainement_source="entrainement",
+        mae_test_minutes=round(float(metriques_test["mae"]), 3),
+        lignes_entrainement=int(len(X_train)),
+    )
 
     print(
         f"Modèle sauvegardé : {CHEMIN_MODELE} "

@@ -14,7 +14,41 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Contrôle qualité du modèle : tests + MAE <= seuil (backend/ML/seuil_qualite.json)
+  qualite-modele:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Installer les dépendances
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Tests backend
+        working-directory: backend
+        run: python -m pytest
+
+      - name: Contrôle de la MAE du modèle
+        working-directory: backend/ML
+        run: python controle_qualite.py --sortie rapport_evaluation.json
+
+      - name: Publier le rapport d'évaluation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-evaluation-modele
+          path: backend/ML/rapport_evaluation.json
+          if-no-files-found: ignore
+
   build-and-push:
+    # le build/push Docker n'a lieu que si la qualité du modèle est validée
+    needs: qualite-modele
     runs-on: ubuntu-latest
 
     steps:
