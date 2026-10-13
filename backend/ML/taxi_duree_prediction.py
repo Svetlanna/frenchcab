@@ -20,6 +20,17 @@ def charger_modele(chemin: Path) -> object:
 
 
 
+def nom_colonne(conn: sqlite3.Connection, table: str, cible: str) -> str:
+    """Nom réel d'une colonne, quelle que soit la convention de la base
+    (pu_locationID, PULocationID, PUlocationID...). La comparaison ignore
+    la casse et les underscores."""
+    norm = cible.replace("_", "").lower()
+    for _, nom, *_ in conn.execute(f"PRAGMA table_info({table})"):
+        if nom.replace("_", "").lower() == norm:
+            return nom
+    raise ValueError(f"colonne {cible} introuvable dans la table {table}")
+
+
 def construire_course_prediction(db_path: Path, zone_depart: int, zone_arrivee: int, date_depart: date, heure_depart: time) -> pd.DataFrame:
 
     if not db_path.exists():
@@ -63,12 +74,15 @@ def construire_course_prediction(db_path: Path, zone_depart: int, zone_arrivee: 
         dep = depart.iloc[0]
         arr = arrivee.iloc[0]
 
+        col_pu = nom_colonne(conn, "trajets", "pu_locationID")
+        col_do = nom_colonne(conn, "trajets", "do_locationID")
+
         distance = pd.read_sql_query(
-            """
+            f"""
             SELECT AVG(trip_distance) AS distance_moyenne
             FROM trajets
-            WHERE pu_locationID = ?
-              AND do_locationID = ?
+            WHERE {col_pu} = ?
+              AND {col_do} = ?
               AND trip_distance > 0
             """,
             conn,
