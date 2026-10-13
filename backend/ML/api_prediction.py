@@ -61,6 +61,19 @@ def liste_zones() -> list[dict]:
     return [{"id": id_zone, "nom": nom} for id_zone, nom in lignes]
 
 
+# noms des colonnes attendus par le frontend (format TLC)
+_ALIAS_COLONNES = {
+    "vendorID": "VendorID",
+    "RateCodeID": "RatecodeID",
+    "pu_locationID": "PULocationID",
+    "do_locationID": "DOLocationID",
+}
+
+
+def _ligne_en_dict(ligne: sqlite3.Row) -> dict:
+    return {_ALIAS_COLONNES.get(k, k): ligne[k] for k in ligne.keys()}
+
+
 def _ouvrir_db() -> sqlite3.Connection:
     """Connexion SQLite en lecture seule (la base n'est accessible que depuis le backend)."""
     if not DEFAULT_DB.exists():
@@ -78,7 +91,7 @@ def liste_courses(limit: int = 100, offset: int = 0) -> list[dict]:
         lignes = conn.execute(
             f"SELECT * FROM {TABLE_TRAJETS} LIMIT ? OFFSET ?", (limit, offset)
         ).fetchall()
-    return [dict(l) for l in lignes]
+    return [_ligne_en_dict(l) for l in lignes]
 
 
 @app.get("/courseID")
@@ -89,4 +102,4 @@ def course_par_id(uid_trajet: int) -> dict:
         ).fetchone()
     if ligne is None:
         raise HTTPException(status_code=404, detail="Course non trouvée")
-    return dict(ligne)
+    return _ligne_en_dict(ligne)
