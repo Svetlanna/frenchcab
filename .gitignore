@@ -9,3 +9,4 @@ backend/data/query/**
 __pycache__/
 *.pyc
 backend/ML/modele_duree_trajet.joblib
+.env

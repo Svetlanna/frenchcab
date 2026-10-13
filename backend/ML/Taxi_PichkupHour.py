@@ -33,7 +33,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "data" / "frenchcab.db"
-CHEMIN_MODELE = Path(__file__).resolve().parent / "modele" / "modele_duree_trajet.joblib"
+CHEMIN_MODELE = BASE_DIR / "modele" / "modele_duree_trajet.joblib"
 
 TABLE_ZONES = "localisations"
 TABLE_TRAJETS = "trajets"

@@ -9,7 +9,7 @@ async function getTest(req, res) {
 
     try {
 
-        const data = await gatewayService.getTests();
+        const data = await courseService.getTests();
 
         return res.status(200).json({
             success: true,
@@ -22,7 +22,7 @@ async function getTest(req, res) {
 
         return res.status(500).json({
             success: false,
-            message: "Impossible de récupérer le test"
+            message: "Impossible de recuperer le test"
         });
     }
 }
@@ -38,23 +38,23 @@ async function getTrouverCourseParId(req, res) {
 
         const { uid_trajet } = req.query;
 
-        console.log("Paramètre reçu :", req.query);
+        console.log("Parametre reçu :", req.query);
 
         if (!uid_trajet) {
 
             return res.status(400).json({
                 success: false,
-                message: "Le paramètre uid_trajet est obligatoire"
+                message: "Le parametre uid_trajet est obligatoire"
             });
         }
 
-        const course = await gatewayService.getTrouverCourseParId(uid_trajet);
+        const course = await courseService.getTrouverCourseParId(uid_trajet);
 
         if (!course) {
 
             return res.status(404).json({
                 success: false,
-                message: "Course non trouvée"
+                message: "Course non trouvee"
             });
         }
 
@@ -65,11 +65,11 @@ async function getTrouverCourseParId(req, res) {
 
     } catch (error) {
 
-        console.error("Erreur récupération course :", error.message);
+        console.error("Erreur recuperation course :", error.message);
 
         return res.status(500).json({
             success: false,
-            message:"Impossible de contacter la base de données"
+            message:"Impossible de contacter la base de donnees"
         });
     }
 }
@@ -83,14 +83,11 @@ async function getCourses(req, res) {
 
     try {
 
-        const limit =
-            Number(req.query.limit) || 100;
+        const limit = Number(req.query.limit) || 100;
 
-        const offset =
-            Number(req.query.offset) || 0;
+        const offset = Number(req.query.offset) || 0;
 
-        const courses =
-            await gatewayService.getCourses(limit, offset);
+        const courses = await courseService.getCourses(limit, offset);
 
         return res.status(200).json({
             success: true,
@@ -101,11 +98,11 @@ async function getCourses(req, res) {
 
     } catch (error) {
 
-        console.error("Erreur récupération courses :", error.message);
+        console.error("Erreur recuperation courses :", error.message);
 
         return res.status(500).json({
             success: false,
-            message:"Impossible de contacter la base de données"
+            message:"Impossible de contacter la base de donnees"
         });
     }
 }

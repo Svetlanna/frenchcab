@@ -1,15 +1,30 @@
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
+
 WORKDIR /app
+
+# Installation des dépendances
 COPY package*.json ./
-RUN npm install
+RUN npm ci
+
+# Copie du code source
 COPY . .
-RUN npm run build
+
+# Build Angular : production par défaut (API https), development en local (API localhost)
+ARG BUILD_CONFIG=production
+RUN npm run build -- --configuration ${BUILD_CONFIG}
+
 
 FROM nginx:alpine
-# Cette ligne cherche le dossier de build et copie son contenu de manière intelligente
-COPY --from=build /app/dist/*/browser /usr/share/nginx/html/
-# Si votre version d'Angular ne crée pas de sous-dossier /browser, on copie la racine du dist :
-COPY --from=build /app/dist/* /usr/share/nginx/html/
+
+# Supprime la configuration Nginx par défaut
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copie notre configuration Nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copie le build Angular
+COPY --from=build /app/dist/front-end/browser /usr/share/nginx/html
 
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]
