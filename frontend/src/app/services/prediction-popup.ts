@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Zone } from '../models/zone';
 import { Estimation } from '../models/estimation';
-import { environment } from '../../environment';
+import { environment } from '../../environments/environment';
 import { map } from 'rxjs';
 
 

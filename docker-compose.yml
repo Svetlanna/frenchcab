@@ -1,7 +1,6 @@
 services:
   backend:
     image: emfall/frenchcab-backend:latest
-    build: ./backend
     container_name: conteneur-back
     ports:
       - "3001:3001"
@@ -11,12 +10,10 @@ services:
 
   frontend:
     image: emfall/frenchcab-frontend:latest
-    build: ./frontend
     container_name: conteneur-front
     ports:
       - "4200:80"
-    volumes:
-      - ./frontend:/app
+
     depends_on:
       - gateway
     restart: always
@@ -24,7 +21,7 @@ services:
 
   gateway:
     image: emfall/frenchcab-gateway:latest
-    build: ./gateway
+
     container_name: conteneur-gateway
     ports:
       - "3000:3000"

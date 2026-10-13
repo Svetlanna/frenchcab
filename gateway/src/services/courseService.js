@@ -1,16 +1,16 @@
 const axios = require("axios");
 const bdd = require("../../connexion.js");
 
-const PYTHON_SERVICE_URL = "http://backend:3001";
+const PYTHON_SERVICE_URL = process.env.BACKEND_URL || "http://backend:3001";
 
 
 async function getTests() {
 
-    console.log("URL Backend :", process.env.BACKEND_URL);
+    console.log("URL Backend :", PYTHON_SERVICE_URL);
 
     try {
 
-        const response = await axios.get(`${process.env.BACKEND_URL}/test`);
+        const response = await axios.get(`${PYTHON_SERVICE_URL}/test`);
  
         return response.data;
 
