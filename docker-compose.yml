@@ -1,37 +1,30 @@
 services:
   backend:
-    #image: emfall/frenchcab-backend:latest
-    build: ./backend
+    image: emfall/frenchcab-backend:latest
     container_name: conteneur-back
     ports:
       - "3001:3001"
-    #volumes:
-     # - ./backend:/app
-     # - /app/node_modules
-     # - ./backend/data:/app/data 
+    volumes:
+     - ./data:/app/data 
     restart: always
 
   frontend:
-    #image: emfall/frenchcab-frontend:latest
-    build: ./frontend
+    image: emfall/frenchcab-frontend:latest
     container_name: conteneur-front
     ports:
       - "4200:80"
-    #volumes:
-      #- ./frontend:/app
+
+    depends_on:
+      - gateway
+    restart: always
+
+
+  gateway:
+    image: emfall/frenchcab-gateway:latest
+
+    container_name: conteneur-gateway
+    ports:
+      - "3000:3000"
     depends_on:
       - backend
     restart: always
-
-  ml:
-    build: ./backend/ML
-    container_name: conteneur-ml
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend/data:/app/data
-    restart: always
-volumes:
-  frontend:
-  backend:
-  ml:

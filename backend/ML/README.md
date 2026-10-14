@@ -1,4 +1,114 @@
-# FrenchCab — Prédiction de la durée d'une course de taxi
+# FrenchCab — BACKEND 
+
+## ETL
+
+### /backend/etl/extraction.py
+
+```from __future__ import annotations```
+Cela permet d'utiliser les types de données annotées dans ce script
+
+```import argparse```
+Cette bibliothèque permet de créer un programme commande ligne qui peut recevoir des arguments en ligne de commande
+
+```import json```
+Cette bibliothèque permet de travailler avec du JSON
+
+```import time```
+Cette bibliothèque permet de mesurer le temps d'exécution de certains blocs de code
+
+```from collections import Counter```
+Cette bibliothèque permet de compter les occurrences de chaque élément d'une liste
+
+>python backend/etl/extraction.py --nrows 100000
+
+##### Étapes du traitement
+
+1. le script lit les **19 colonnes** ; les 4 colonnes techniques du portail (id, version, created_at, updated_at) sont ignorées.
+
+2. le script normalise :
+    * les noms repassent au format du dictionnaire TLC (vendorid → VendorID, pulocationid → PULocationID…),
+    * les dates deviennent des dates,
+    * les codes convertis en entiers,
+    * les montants sont convertis en décimaux
+
+3. le script filtre ; les lignes aberrantes sont comptées puis retirées.
+
+4. le script écrit ; une première écriture crée le fichier avec les ent^tes de colonnes, chaque enregistrement s'ajoute ensuite à la fin du dataframe
+
+##### Règles de nettoyage
+
+1. **date_invalide**
+    * Date de départ ou d'arrivée illisible.
+    * Impossible de calculer la durée.
+2. **hors_annee**
+    * Départ hors de 2023 _(l'export contient des courses du 31/12/2022)_
+3. **duree_negative_ou_nulle**
+    * Arrivée avant ou à l'heure du départ.
+    * Erreur de compteur.
+4. **duree_sup_6h**
+    * Course de plus de 6 h.
+    * Compteur resté allumé _(vu : 23 h pour 1,2 mile)_.
+5. **distance_nulle_ou_aberrante**
+    * Distance ≤ 0 ou > 200 miles.
+    * Distance non enregistrée.
+6. **montant_negatif_ou_nul**
+    * Tarif ou total ≤ 0.
+    * Lignes d'annulation ou de remboursement.
+7. **montant_aberrant**
+    * Total > 1 000 $.
+    * Saisie erronée.
+8. **vendor_inconnu**
+    * VendorID hors 1, 2, 6, 7.
+    * Code absent du dictionnaire.
+9. **ratecode_invalide**
+    * RatecodeID hors 1–6 et 99.
+    * Code absent du dictionnaire.
+10. **payment_type_invalide**
+    * payment_type hors 0–6.
+    * Code absent du dictionnaire.
+
+11. **Doublons**
+
+Est considéré 'doublon' une ligne qui est identique à une autre dans l'échantillon de donnéees traité.
+
+![ATTENTION] Deux valeurs sont vidées sans supprimer la course : 
+    * passenger_count = 0
+    * RatecodeID = 99 
+Ils deviennent « inconnu » (case vide).
+
+Deux fichiers sont écrits dans backend/data/clean/
+    * yellow_tripdata_2023.csv   les courses propres, 23 colonnes (les 19 du dictionnaire + 4 ajoutées). il peut peser plusieurs Go ,vérifier l'espace disque
+    * rapport_extraction_2023.json  lignes lues, gardées, rejetées, taux de rejet et détail par motif.
+
+
+#### Colonnes ajoutées
+
+**cbd_congestion_fee**
+0 pour 2023 (taxe créée le 5 janvier 2025), gardée pour un schéma identique d'une année à l'autre
+**trip_duration_min**
+durée de la course en minutes
+**pickup_hour**
+heure de départ (0–23)
+
+**pickup_weekday**
+jour de départ (0 = lundi, 6 = dimanche)
+
+![ATTENTION]
+ Remboursements--- une annulation apparaît en deux lignes, une négative et une positive. La négative est retirée, la positive reste : la course compte donc une fois alors qu'elle a été remboursée
+
+• doublons --- ils ne sont détectés qu'à l'intérieur d'un même morceau , deux lignes identiques dans deux morceaux différents
+• frais d'aéroport, VendorID 1 : pour les courses à l'aéroport, extra semble déjà contenir les 1,25 $ de airport_fee. La somme des colonnes dépasse alors total_amount de 1,25 $ ; se fier à total_amount
+•pourboires en espèces  ----- ils ne sont pas enregistrés ; tip_amount ne concerne que les paiements par carte
+• improvement_surcharge : quelques lignes sont à 0,30 $ au lieu de 1,00 $ (ancien tarif) ; elles sont gardées
+•test le script a été vérifié sur un petit extrait, pas encore sur les 6 Go complets
+
+ lancer d'abord avec --nrows 100000 et relire le rapport    python backend/etl/extraction.py --nrows 100000
+
+ ## Problématiques
+
+Incohérences entre colonnes et tables sql -> ajouter les quelques colonnes manquantes dans la table "trajets" et  s'assurer de la présence du champ `uid_trajet` qui est un identifiant unique auutoincrémenté et fait office de clé primaire.
+
+## Prédiction de la durée d'une course de taxi
 
 Ce module prédit **combien de minutes va durer une course de taxi jaune** (New York, 2023), à partir des informations connues **au moment du départ** : la distance, l'heure, le jour et les zones de départ et d'arrivée
 
@@ -9,7 +119,7 @@ backend/
 └── ML/
     ├── Taxi_PichkupHour.py          ← 1. entraînement du modèle
     ├── modele_duree_trajet.joblib   ←    modèle sauvegardé
-    ├── taxi_duree_prediction.py.py     ← 2. prédiction d'une course par uid_trajet
+    ├── taxi_duree_prediction.py.py     ← 2. prédiction d'une course par (zone_depart, zone_arrivee, date, heure)
     ├── api_prediction.py            ← 3. API FastAPI
     ├── requirements.txt             ← 4. dépendances Python
     ├── Dockerfile                   ← 4. image Docker de l'API
@@ -48,7 +158,7 @@ Comme la réponse est un nombre, c'est une **régression**
 |---|---|---|
 | 1. Charger | `charger_donnees()` | |
 | 2. Nettoyer | `nettoyer()` | |
-| 3. Variables | `construire_variables()` | Crée `heure` et `est_weekend`, ainsi que la paire de zones `trajet_zones` (ex. `"161_236"`) |
+| 3. Variables | `construire_variables()` | Crée `heure` et `est_weekend`, ainsi que la paire de zones `trajet_zones` (ex. `"zone_names"`) |
 | 4. Train / test | `train_test_split` | 80 % des courses pour apprendre, 20 % pour vérifier sur des courses jamais vues |
 | 5. Baselines | `DummyRegressor`, médiane par paire, `LinearRegression` | Modèles très simples que le vrai modèle doit battre |
 | 6. Entraîner | `creer_pipeline()` | Prépare les données, puis entraîne un Gradient Boosting |
@@ -59,7 +169,7 @@ Comme la réponse est un nombre, c'est une **régression**
 
 | Type | Variables | Traitement |
 |---|---|---|
-| Nombres | `trip_distance`, `heure`, `pickup_weekday`, `est_weekend`, `passenger_count` | Utilisées telles quelles |
+| Nombres | `trip_distance`, `heure`, `pickup_weekday`, `est_weekend`, `mois` | Utilisées telles quelles |
 | Peu de catégories | `quartier_dep/arr`, `zone_service_dep/arr`, `RateCodeID`, `vendorID` | **OneHotEncoder** : une colonne 0/1 par valeur |
 | Beaucoup de catégories | `pu_locationID`, `do_locationID`, `trajet_zones` | **TargetEncoder** : chaque zone est remplacée par la durée moyenne de ses courses |
 
@@ -94,7 +204,7 @@ Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien
 | Fonction | Rôle |
 |---|---|
 | `charger_modele()` | Ouvre `modele_duree_trajet.joblib` |
-| `charger_courses(db, [uid])` | `SELECT ... FROM trajets WHERE uid_trajet IN (...)`, puis la jointure avec `localisations` |
+| `constuire_course_prediction(db, zone_depart, zone_arrivee, date_depart, heure_depart)` | `SELECT ... FROM trajets WHERE zone IN (...)`, puis la jointure avec `localisations` |
 | `predire(modele, df)` | Applique `construire_variables()` (**la même** fonction qu'à l'entraînement), puis `modele.predict()` |
 | `afficher(df)` | Affiche une phrase par course |
 | `prediction(id_trajet)` | Fait tout : charger, prédire et afficher |
@@ -110,13 +220,13 @@ Points importants :
 
 ```bash
 cd backend/ML
-python taxi_duree_prediction.py.py      # lance prediction(20)
+python taxi_duree_prediction.py      # lance prediction(20)
 ```
 
 Résultat :
 
 ```
-la course uid_trajet 20 à 2023-01-01 start time 00:32 a durée 12 min (réelle 11 min) à localisation Manhattan/Midtown Center/Yellow Zone -> Manhattan/Upper East Side North/Yellow Zone
+Course prévue le 2027-03-15 à 10:00 de Bronx/Allerton/Pelham Gardens/Boro Zone vers Manhattan/Battery Park City/Yellow Zone - durée prédite : 48 min
 ```
 
 > Remarque : si la course a servi à l'entraînement, le modèle l'a déjà « vue ». La prédiction sera donc un peu trop bonne
@@ -131,14 +241,16 @@ Angular tourne dans le **navigateur**, qui ne peut pas lancer un fichier Python.
 
 ```
 GET /api/prediction/{uid_trajet}
+
 ```
+Pour ouvrir FASTApi [http://127.0.0.1:8000/docs]
 
 | Partie du code | Rôle |
 |---|---|
 | `app = FastAPI(...)` | Crée l'application web |
 | `http://localhost:4200` | Autorise Angular (port 4200) à appeler l'API (port 8000) |
 | Chargement du modèle | Le modèle est chargé **une seule fois**, au démarrage, et pas à chaque requête |
-| `@app.get("/api/prediction/{uid_trajet}")` | Le nombre dans l'adresse devient le paramètre `uid_trajet: int` |
+| `@app.get("/api/prediction")` | Attend les paramètres dans le body `zone_depart: str, zone_arrivee: str, date_depart: date, heure_depart: time` |
 | `HTTPException(404)` | Erreur renvoyée si la course n'existe pas |
 | `return {...}` | Le dictionnaire est renvoyé en JSON (on convertit avec `int()` et `float()`, car le JSON ne connaît pas les types de pandas) |
 
@@ -152,13 +264,10 @@ GET /api/prediction/{uid_trajet}
 
 ```json
 {
-  "uid_trajet": 13,
-  "date": "2023-01-01",
-  "start_time": "00:21",
-  "duree_predite": 15,
-  "duree_reelle": 14,
-  "depart": "Manhattan/Midtown Center/Yellow Zone",
-  "arrivee": "Manhattan/Upper East Side South/Yellow Zone"
+  "zone_depart": "Allerton/Pelham Gardens",
+  "zone_arrivee": "Battery Park City",
+  "date_depart": "2027-03-15",
+  "heure_depart": "10:00:00",
 }
 ```
 
@@ -208,7 +317,7 @@ CMD ["uvicorn", "api_prediction:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ### Service dans `docker-compose.yml`
 
-```yaml
+```yml
   ml:
     build: ./backend/ML
     container_name: conteneur-ml
@@ -236,3 +345,102 @@ Puis ouvrir [http://localhost:8000/api/prediction/13](http://localhost:8000/api/
 2. `python taxi_duree_prediction.py.py` → vérifie qu'une prédiction marche
 3. `uvicorn api_prediction:app --port 8000` → vérifie l'API sans Docker
 4. `docker compose up --build` → lance tout : backend, ml et frontend
+
+
+## 5. Identification, évaluation et contrôle qualité du modèle
+
+### Identifier le modèle utilisé
+
+Les informations sont stockées dans `backend/modele_duree_trajet.meta.json`, à côté du modèle, et exposées par l'API :
+
+```
+GET /modele                      (backend, port 3001)
+GET /prediction/modele           (gateway, port 3000)
+```
+
+Exemple de réponse :
+
+```json
+{
+  "version": "c3cecda3ba02",
+  "date_entrainement": "2026-10-13T13:16:35",
+  "date_entrainement_source": "date_fichier",
+  "mae_minutes": 3.921,
+  "mae_source": "evaluation",
+  "jeu_evaluation": "tlc_eval_2026-01.csv",
+  "metadonnees_a_jour": true
+}
+```
+
+* `version` : 12 premiers caractères du SHA-256 du fichier `.joblib` réellement chargé. Elle est recalculée au démarrage : un modèle remplacé change automatiquement de version.
+* `date_entrainement` : écrite par le script d'entraînement (`date_entrainement_source = "entrainement"`). Pour un modèle livré avant l'ajout des métadonnées, c'est la date du fichier (`"date_fichier"`).
+* `mae_minutes` : MAE du jeu TLC d'évaluation (`mae_source = "evaluation"`), ou à défaut MAE du jeu de test de l'entraînement (`"test_entrainement"`).
+* Le fichier meta n'est repris que si son empreinte correspond au modèle chargé. Sinon `metadonnees_a_jour` vaut `false` et la date et la MAE restent `null` : les infos d'un ancien modèle ne sont jamais attribuées à un autre.
+
+Chaque réponse de `/prediction` contient aussi `modele_version`.
+
+### Évaluer le modèle (sans réentraînement) — `evaluation_modele.py`
+
+```bash
+cd backend/ML
+python evaluation_modele.py --sortie rapport.json
+```
+
+Le script :
+
+1. charge le modèle existant (`modele_duree_trajet.joblib`), sans le réentraîner ;
+2. lit un jeu de courses TLC distinct des données d'entraînement : `backend/eval/tlc_eval_2026-01.csv` (20 000 courses de janvier 2026, le modèle étant entraîné sur 2023) ;
+3. calcule la durée réelle (arrivée - départ, en minutes), nettoie les courses aberrantes avec les mêmes règles que l'entraînement, puis prédit chaque durée ;
+4. compare prédictions et durées réelles et produit un rapport JSON (console et fichier `--sortie`).
+
+Extrait du rapport :
+
+```json
+"metriques": {
+  "mae_minutes": 3.921,
+  "rmse_minutes": 7.174,
+  "r2": 0.7225,
+  "mae_baseline_mediane_minutes": 8.852
+}
+```
+
+`mae_baseline_mediane_minutes` est la MAE d'un prédicteur qui répondrait toujours la durée médiane : c'est le point de comparaison du seuil.
+
+| Option | Rôle |
+|---|---|
+| `--donnees <fichier>` | autre jeu TLC (CSV ou parquet ; parquet demande `pyarrow`) avec les colonnes `tpep_pickup_datetime`, `tpep_dropoff_datetime`, `trip_distance`, `PULocationID`, `DOLocationID` |
+| `--zones <fichier>` | `taxi_zone_lookup.csv` (par défaut `backend/eval/taxi_zone_lookup.csv`) |
+| `--echantillon N` | n'évalue que N courses (0 = toutes) |
+| `--sortie <fichier>` | écrit le rapport JSON |
+| `--maj-metadonnees` | enregistre la MAE dans `modele_duree_trajet.meta.json`, donc dans `/modele` |
+
+### Contrôle automatique du seuil — `controle_qualite.py`
+
+```bash
+python controle_qualite.py              # évalue puis compare au seuil
+python controle_qualite.py --seuil 4.5  # seuil explicite
+python controle_qualite.py --rapport rapport.json   # à partir d'un rapport existant
+```
+
+| Code retour | Signification |
+|---|---|
+| `0` | MAE <= seuil |
+| `1` | MAE > seuil : échec qualité, la CI échoue |
+| `2` | erreur technique (modèle, données ou rapport introuvables) |
+
+Le seuil (5,0 min) et sa justification sont dans `seuil_qualite.json` : environ 25 % de marge sur la MAE mesurée (3,92 min) et nettement sous la baseline (8,85 min), au-delà de laquelle le modèle n'apporterait plus de gain réel. À revoir si le modèle ou le jeu d'évaluation change.
+
+### Tests et CI
+
+* Tests : `cd backend && python -m pytest` (7 tests dont la vérification du seuil sur un échantillon).
+* Pipeline `.github/workflows/ci-cd.yml` : `qualite-modele` (tests + contrôle de la MAE), puis `build-and-push` (images Docker Hub), puis `deploy` (VM). Si le contrôle échoue, rien n'est construit ni déployé.
+
+### Après un réentraînement
+
+```bash
+python Taxi_PichkupHour.py 200000
+python evaluation_modele.py --maj-metadonnees
+curl http://localhost:3001/modele
+```
+
+La version change, la date d'entraînement est enregistrée et la MAE sur le jeu TLC est mise à jour. Commiter ensuite le `.joblib` et son `.meta.json` ensemble.

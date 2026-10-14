@@ -1,0 +1,174 @@
+name: Frenchcab - CI/CD
+
+run-name: ${{ github.actor }} - CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+  workflow_dispatch:
+
+# un seul pipeline à la fois par branche (évite deux déploiements simultanés)
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+
+  # ---------------------------------------------------------------
+  # 1. Qualité : tests backend + MAE du modèle <= seuil
+  #    (seuil et justification : backend/ML/seuil_qualite.json)
+  # ---------------------------------------------------------------
+  qualite-modele:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Installer les dépendances
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Tests backend
+        working-directory: backend
+        run: python -m pytest
+
+      - name: Contrôle de la MAE du modèle
+        working-directory: backend/ML
+        run: python controle_qualite.py --sortie rapport_evaluation.json
+
+      - name: Publier le rapport d'évaluation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-evaluation-modele
+          path: backend/ML/rapport_evaluation.json
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------
+  # 2. Build des images, test en conteneurs, push sur Docker Hub
+  # ---------------------------------------------------------------
+  build-and-push:
+    needs: qualite-modele
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: 1. Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: 2. Créer le fichier .env
+        run: |
+          echo "PORT=3001" > backend/.env
+
+      - name: 3. Connexion à Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 4. Construire le gateway
+        run: docker build -t emfall/frenchcab-gateway:latest ./gateway
+
+      - name: 5. Construire le backend
+        run: docker build -t emfall/frenchcab-backend:latest ./backend
+
+      - name: 6. Construire le frontend
+        run: docker build -t emfall/frenchcab-frontend:latest ./frontend
+
+      - name: 7. Lancer les conteneurs
+        run: docker compose up -d
+
+      - name: 8. Vérifier les conteneurs
+        run: docker compose ps
+
+      - name: 9. Tester le frontend
+        run: |
+          for i in $(seq 1 30); do
+            if curl --fail http://localhost:4200/ ; then
+              echo "Frontend disponible !"
+              exit 0
+            fi
+
+            echo "Attente du frontend..."
+            sleep 1
+          done
+
+          echo "Le frontend ne répond pas"
+          docker compose logs frontend
+          exit 1
+
+      - name: 10. Afficher les logs
+        if: always()
+        run: docker compose logs
+
+      - name: 11. Arrêter les conteneurs
+        if: always()
+        run: docker compose down
+
+      - name: 12. Push gateway
+        if: success()
+        run: docker push emfall/frenchcab-gateway:latest
+
+      - name: 13. Push backend
+        if: success()
+        run: docker push emfall/frenchcab-backend:latest
+
+      - name: 14. Push frontend
+        if: success()
+        run: docker push emfall/frenchcab-frontend:latest
+
+  # ---------------------------------------------------------------
+  # 3. Déploiement sur la VM Azure
+  #    Uniquement après le push des images (plus de course CI/CD),
+  #    et pas sur les pull requests.
+  # ---------------------------------------------------------------
+  deploy:
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Déployer sur la VM Azure
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ vars.VM_HOST }}
+          username: ${{ vars.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            set -e
+            cd /home/groupe1/frenchcab
+
+            # Nouvelles images depuis Docker Hub, puis redémarrage
+            docker compose pull
+            docker compose up -d
+
+            # Les vérifications se font depuis la VM : ports publiés sur localhost
+            attendre() {
+              url="$1"; nom="$2"
+              for i in $(seq 1 60); do
+                if curl -sf "$url" > /dev/null; then
+                  echo "$nom opérationnel après $i s."
+                  return 0
+                fi
+                sleep 1
+              done
+              echo "ECHEC : $nom ne répond pas ($url)"
+              docker compose logs --tail 50
+              return 1
+            }
+
+            attendre http://localhost:3001/modele "backend (modèle chargé)"
+            attendre "http://localhost:3000/course/courses?limit=1" "gateway -> backend -> base de données"
+            attendre http://localhost:4200/ "frontend"
+
+            echo "Déploiement réussi : services opérationnels."
+            docker compose ps

@@ -10,6 +10,7 @@
     "test": "ng test && vitest run --environment jsdom",
     "serve:ssr:front-end": "node dist/front-end/server/server.mjs"
   },
+  
   "private": true,
   "packageManager": "npm@11.13.0",
   "dependencies": {
