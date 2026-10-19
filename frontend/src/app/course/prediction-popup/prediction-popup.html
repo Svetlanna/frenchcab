@@ -1,0 +1,55 @@
+<button class="btn-ouvrir" (click)="ouvrir()">Planifier un trajet</button>
+
+@if (ouvert()) {
+  <div class="overlay" (click)="fermer()">
+    <div class="popup" [class.etendu]="resultat() !== null" (click)="$event.stopPropagation()">
+
+      <button class="btn-fermer" (click)="fermer()">✕</button>
+      <h2>Planifier un trajet</h2>
+
+      <label>
+        Départ
+        <select [(ngModel)]="departId">
+          <option [ngValue]="null" disabled>Choisir une zone</option>
+          @for (zone of zones(); track zone.id) {
+            <option [ngValue]="zone.id">{{ zone.nom }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Arrivée
+        <select [(ngModel)]="arriveeId">
+          <option [ngValue]="null" disabled>Choisir une zone</option>
+          @for (zone of zones(); track zone.id) {
+            <option [ngValue]="zone.id">{{ zone.nom }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Date et heure de départ
+        <input type="datetime-local" [(ngModel)]="dateDepart" />
+      </label>
+
+      @if (erreur()) {
+        <p class="erreur">{{ erreur() }}</p>
+      }
+
+      <button class="btn-valider" (click)="valider()" [disabled]="chargement()">
+        {{ chargement() ? 'Calcul en cours...' : 'Valider' }}
+      </button>
+
+      @if (resultat(); as r) {
+        <div class="resultat">
+          <h3>Votre trajet</h3>
+          <p><strong>Départ :</strong> {{ r.depart }}, le {{ r.dateDepart | date: 'dd/MM/yyyy à HH:mm' }}</p>
+          <p><strong>Arrivée :</strong> {{ r.arrivee }}, le {{ r.dateArrivee | date: 'dd/MM/yyyy à HH:mm' }}</p>
+          <p><strong>Durée estimée :</strong> {{ r.duree }} min</p>
+        </div>
+      }
+
+    
+    </div>
+  </div>
+}

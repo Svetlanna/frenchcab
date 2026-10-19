@@ -2,10 +2,11 @@ import { Component, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
 import { CurrencyPipe, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { CourseService } from '../course-service';
 import { CourseModel } from './course.model';
+import { TripPopupComponent } from './prediction-popup/prediction-popup';
 
 @Component({
   selector: 'app-course',
-  imports: [CurrencyPipe, DecimalPipe],
+  imports: [CurrencyPipe, DecimalPipe, TripPopupComponent],
   templateUrl: './course.html',
   styleUrl: './course.scss',
 })

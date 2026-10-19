@@ -12,3 +12,4 @@ coverage
 data/clean
 data/*.csv
 data/*.parquet
+.db

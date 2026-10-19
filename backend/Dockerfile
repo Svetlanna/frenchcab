@@ -1,13 +1,15 @@
-FROM node:22
+FROM python:3.14-slim
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY requirements.txt .
 
-RUN npm install --build-from-source=sqlite3
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+WORKDIR /app/ML
+
 EXPOSE 3001
 
-CMD ["npm", "run", "start"]
+CMD ["uvicorn", "api_prediction:app", "--host", "0.0.0.0", "--port", "3001"]

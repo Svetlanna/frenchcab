@@ -33,7 +33,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "data" / "frenchcab.db"
-CHEMIN_MODELE = Path(__file__).resolve().parent / "modele_duree_trajet.joblib"
+CHEMIN_MODELE = BASE_DIR  / "modele_duree_trajet.joblib"
 
 TABLE_ZONES = "localisations"
 TABLE_TRAJETS = "trajets"
@@ -45,46 +45,57 @@ NOMS_ZONES = ["locationID", "quartier", "zone", "zone_service"]
 
 
 def charger_donnees(db_path: Path, echantillon: int) -> pd.DataFrame:
-    # seulement les colonnes utiles de 'trajets' (-échantillon,puis ajoute le quartier de départ et d'arrivée)
 
     if not db_path.exists():
-        raise FileNotFoundError(f"Base introuvable  {db_path}")
+        raise FileNotFoundError(f"Base introuvable : {db_path}")
 
     with sqlite3.connect(db_path) as conn:
+
         total = conn.execute(f"SELECT COUNT(*) FROM {TABLE_TRAJETS}").fetchone()[0]
 
-
-
         pas = max(1, total // echantillon) if echantillon else 1
-        print(f" {total:,} trajets dans la base -> on en garde 1 sur {pas}")
 
-        # on ne charge que les colonnes utiles, moins de mémoire
-        # on  ne lit PAS fare_amount, tip_amount, total_amount...
-        # (voir l'étape 4 : fuite de données).
+        print(
+            f"{total:,} trajets dans la base "
+            f"-> on en garde 1 sur {pas}"
+        )
+
+        # Données nécessaires à l'entraînement
         trajets = pd.read_sql_query(f"""
-             SELECT trip_duration_min,
-                    trip_distance,
-                    pickup_hour,
-                    pickup_weekday,
-                    passenger_count,
-                    RateCodeID,
-                    vendorID,
-                    pu_locationID,
-                    do_locationID
-             FROM {TABLE_TRAJETS}
-             WHERE uid_trajet % {pas} = 0
-         """, conn)
+            SELECT
+                trip_duration_min,
+                trip_distance,
+                tpep_pickup_datetime,
+                pickup_hour,
+                pickup_weekday,
+                pu_locationID,
+                do_locationID
+            FROM {TABLE_TRAJETS}
+            WHERE uid_trajet % {pas} = 0
+        """, conn)
 
-        lieux = pd.read_sql_query(f"SELECT * FROM {TABLE_ZONES}", conn)
+        # Informations géographiques
+        lieux = pd.read_sql_query(f"SELECT * FROM {TABLE_ZONES}",conn)
 
     lieux.columns = NOMS_ZONES
-    lieux = lieux[["locationID", "quartier", "zone_service"]]
 
-    # JOINTURE (= LEFT JOIN en SQL), deux fois : départ puis arrivée.
-    df = trajets.merge(lieux.add_suffix("_dep"), how="left",
-                       left_on="pu_locationID", right_on="locationID_dep")
-    df = df.merge(lieux.add_suffix("_arr"), how="left",
-                  left_on="do_locationID", right_on="locationID_arr")
+    lieux = lieux[["locationID","quartier","zone","zone_service"]]
+
+    # Informations du lieu de départ
+    df = trajets.merge(
+        lieux.add_suffix("_dep"),
+        how="left",
+        left_on="pu_locationID",
+        right_on="locationID_dep"
+    )
+
+    # Informations du lieu d'arrivée
+    df = df.merge(
+        lieux.add_suffix("_arr"),
+        how="left",
+        left_on="do_locationID",
+        right_on="locationID_arr"
+    )
 
     return df
 
@@ -113,30 +124,89 @@ def nettoyer(df: pd.DataFrame) -> pd.DataFrame:
 #seulement ce qu'on connait au moment du depart
 # fare_amount, tip_amount, total_amount, tpep_dropoff_datetime
 # sont connus apres la course -> les utiliser = fuite de données
-VARIABLES_NUMERIQUES = ["trip_distance", "heure", "pickup_weekday",
-                        "est_weekend", "passenger_count"]
-VARIABLES_CATEGORIELLES = ["quartier_dep", "quartier_arr",
-                           "zone_service_dep", "zone_service_arr",
-                           "RateCodeID", "vendorID"]
-
+VARIABLES_NUMERIQUES = ["trip_distance", "heure", "pickup_weekday", "est_weekend", "mois"]
+VARIABLES_CATEGORIELLES = ["quartier_dep", "quartier_arr", "zone_service_dep", "zone_service_arr"]
 VARIABLES_LOCATIONS = ["pu_locationID", "do_locationID", "trajet_zones"]
 
 
 def construire_variables(df: pd.DataFrame) -> pd.DataFrame:
-    # pickup_hour ex "HH:MM:00" on garde l'heure 0..23
-    df["heure"] = df["pickup_hour"].str.slice(0, 2).astype(int)
-    df["est_weekend"] = (df["pickup_weekday"] >= 5).astype(int)  # 5 = samedi, 6=dimanche
-    # RateCodeID 99 et passenger_count 0 = "inconnu" ,c'était dans etl
-    # on les garde, le modèle apprendra que ce sont des cas à part
-    #codes numériques -> texte ("1.0" et "1")
-    for col in ["RateCodeID", "vendorID"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(-1).astype(int)
-    for col in VARIABLES_CATEGORIELLES:
-        df[col] = df[col].fillna("inconnu").astype(str)
-    df["trajet_zones"] = df["pu_locationID"].astype(str) + "_" + df["do_locationID"].astype(str)
-    for col in ["pu_locationID", "do_locationID"]:
-        df[col] = df[col].astype(str)
 
+    # -----------------------------
+    # Date / heure
+    # -----------------------------
+
+    df["heure"] = (
+        df["pickup_hour"]
+        .astype(str)
+        .str.slice(0, 2)
+        .astype(int)
+    )
+
+    # Jour de la semaine : 0 = lundi  ... 5 = samedi 6 = dimanche
+    df["est_weekend"] = (df["pickup_weekday"] >= 5).astype(int)
+
+    # Mois récupéré depuis la date de départ
+    df["tpep_pickup_datetime"] = pd.to_datetime(df["tpep_pickup_datetime"])
+
+    df["mois"] = df["tpep_pickup_datetime"].dt.month
+
+
+    # -----------------------------
+    # Localisations
+    # -----------------------------
+
+    df["pu_locationID"] = (
+        df["pu_locationID"]
+        .fillna(-1)
+        .astype(int)
+        .astype(str)
+    )
+
+    df["do_locationID"] = (
+        df["do_locationID"]
+        .fillna(-1)
+        .astype(int)
+        .astype(str)
+    )
+
+    # Couple départ -> arrivée
+    df["trajet_zones"] = (df["pu_locationID"] + "_"+ df["do_locationID"])
+
+
+    # -----------------------------
+    # Variables catégorielles
+    # -----------------------------
+
+    variables_categorielles = [
+        "pu_locationID",
+        "do_locationID",
+        "trajet_zones",
+        "quartier_dep",
+        "quartier_arr",
+        "zone_service_dep",
+        "zone_service_arr",
+    ]
+
+    for col in variables_categorielles:
+        df[col] = (
+            df[col]
+            .fillna("inconnu")
+            .astype(str)
+        )
+
+
+    # -----------------------------
+    # Distance
+    # -----------------------------
+
+    # À l'entraînement :
+    # -> vraie distance du trajet
+    #
+    # À la prédiction :
+    # -> distance moyenne historique
+    #    départ -> arrivée
+
+    df["trip_distance"] = pd.to_numeric(df["trip_distance"], errors="coerce")
 
     return df
 
@@ -162,74 +232,143 @@ def creer_pipeline(numeriques: list[str]) -> Pipeline:
     return Pipeline([("pretraitement", pretraitement), ("modele", modele)])
 
 
+def fmt_min_sec(minutes: float) -> str:
+    total_sec = round(minutes * 60)
+    m, s = divmod(total_sec, 60)
+    return f"{m:2d} min {s:02d} s"
+
+
 def evaluer(nom: str, y_vrai, y_pred) -> dict:
     mae = mean_absolute_error(y_vrai, y_pred)
     rmse = root_mean_squared_error(y_vrai, y_pred)
     r2 = r2_score(y_vrai, y_pred)
-    print(f"  {nom:<36} mae = {mae:5.2f} min | rmse = {rmse:5.2f} min | r2 = {r2:5.3f}")
+
+    print(
+        f"  {nom:<36} mae = {fmt_min_sec(mae)} | "
+        f"rmse = {fmt_min_sec(rmse)} | r2 = {r2:5.3f}"
+    )
+    return {"mae": mae, "rmse": rmse, "r2": r2}
+
+
+
+
+def evaluer2(nom: str, y_vrai, y_pred) -> dict:
+    mae = mean_absolute_error(y_vrai, y_pred)
+    rmse = root_mean_squared_error(y_vrai, y_pred)
+    r2 = r2_score(y_vrai, y_pred)
+    print(f"  {nom:<36} mae = {mae:5.2f} $ | rmse = {rmse:5.2f} $ | r2 = {r2:5.3f}")
     return {"mae": mae, "rmse": rmse, "r2": r2}
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description="modèle de durée de trajet")
     p.add_argument("--db", type=Path, default=DEFAULT_DB)
-    p.add_argument("echantillon", nargs="?", type=int, default=1_000_000,
-                   help="nombre approximatif de courses à utiliser (0=toutes)")
-    p.add_argument("--sans-distance", action="store_true",
-                   help="prédire seulement avec les locations et l'heure "
-                        "(cas réel : le client choisit départ + arrivée)")
+    p.add_argument("echantillon",nargs="?", type=int, default=1_000_000, help="nombre approximatif de courses à utiliser (0=toutes)")
+
     a = p.parse_args()
     t0 = time.time()
 
     df = charger_donnees(a.db, a.echantillon)
     df = nettoyer(df)
     df = construire_variables(df)
-    print(df)
-    numeriques = [c for c in VARIABLES_NUMERIQUES
-                  if not (a.sans_distance and c == "trip_distance")]
-    colonnes = numeriques + VARIABLES_CATEGORIELLES + VARIABLES_LOCATIONS
+
+    numeriques = VARIABLES_NUMERIQUES
+
+    colonnes = (numeriques + VARIABLES_CATEGORIELLES + VARIABLES_LOCATIONS)
+
     X = df[colonnes]
     y = df["trip_duration_min"]
-    print(f"durée moyenne = {y.mean():.1f} min | médiane = {y.median():.1f} min")
 
-    # train / test -----------------------------------------------
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=GRAINE)
-    print(f"train : {len(X_train):,} | test : {len(X_test):,}")
+    print(
+    f"durée moyenne = {fmt_min_sec(y.mean())} | "
+    f"médiane = {fmt_min_sec(y.median())}"
+)
 
-    # baselines
+    # train / test
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=GRAINE)
+
+    print(
+        f"train : {len(X_train):,} | "
+        f"test : {len(X_test):,}"
+    )
+
+    # -------------------------
+    # Baselines
+    # -------------------------
+
     print("baselines")
     naif = DummyRegressor(strategy="median").fit(X_train, y_train)
     evaluer("baseline toujours la médiane", y_test, naif.predict(X_test))
 
-    # baseline "par location" : la durée médiane de chaque paire départ->arrivée
+    # Médiane historique par paire départ -> arrivée
     mediane_paire = y_train.groupby(X_train["trajet_zones"]).median()
-    pred_paire = X_test["trajet_zones"].map(mediane_paire).fillna(y_train.median())
+
+    pred_paire = (
+        X_test["trajet_zones"]
+        .map(mediane_paire)
+        .fillna(y_train.median())
+    )
     evaluer("baseline médiane par paire de zones", y_test, pred_paire)
 
-    if not a.sans_distance:
-        lineaire = LinearRegression().fit(X_train[["trip_distance"]], y_train)
-        evaluer("baseline régression / distance", y_test,
-                lineaire.predict(X_test[["trip_distance"]]))
+    # Baseline distance
+    lineaire = LinearRegression().fit(X_train[["trip_distance"]], y_train)
+    evaluer("baseline régression / distance", y_test, lineaire.predict(X_test[["trip_distance"]]))
 
-    #  modèle ------------------------------------------------
+    # -------------------------
+    # Modèle
+    # -------------------------
+
     print("entrainement du gradient boosting")
     pipeline = creer_pipeline(numeriques).fit(X_train, y_train)
 
-    # evaluation
+    # -------------------------
+    # Evaluation
+    # -------------------------
+
     print("evaluation")
     evaluer("gradient boosting, train", y_train, pipeline.predict(X_train))
-    evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
+    metriques_test = evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
+
+    # -------------------------
+    # Importance des variables
+    # -------------------------
 
     ech = X_test.sample(min(5000, len(X_test)), random_state=GRAINE)
-    imp = permutation_importance(pipeline, ech, y_test.loc[ech.index], n_repeats=5,
-                                 random_state=GRAINE, scoring="neg_mean_absolute_error")
-    print("importance (hausse de l'erreur quand on mélange la variable)")
-    for nom, val in sorted(zip(X.columns, imp.importances_mean), key=lambda t: -t[1]):
-        print(f"  {nom:<18} {val:+5.2f} min")
+
+    imp = permutation_importance(pipeline, ech, y_test.loc[ech.index], n_repeats=5, random_state=GRAINE, scoring="neg_mean_absolute_error")
+
+    print("importance ""(hausse de l'erreur quand on mélange la variable)")
+
+    for nom, val in sorted(
+        zip(X.columns, imp.importances_mean),
+        key=lambda t: -t[1]
+    ):
+        print(
+            f"  {nom:<18} "
+            f"{val:+5.2f} min"
+        )
+
+    # -------------------------
+    # Sauvegarde
+    # -------------------------
 
     joblib.dump(pipeline, CHEMIN_MODELE)
-    print(f"Modèle sauvegardé : {CHEMIN_MODELE}  ({time.time() - t0:.0f}s)")
+
+    # identification du modèle : date d'entraînement + MAE sur le jeu de test
+    from datetime import datetime
+    from modele_info import ecrire_meta
+    ecrire_meta(
+        CHEMIN_MODELE,
+        date_entrainement=datetime.now().isoformat(timespec="seconds"),
+        date_entrainement_source="entrainement",
+        mae_test_minutes=round(float(metriques_test["mae"]), 3),
+        lignes_entrainement=int(len(X_train)),
+    )
+
+    print(
+        f"Modèle sauvegardé : {CHEMIN_MODELE} "
+        f"({time.time() - t0:.0f}s)"
+    )
 
 
 if __name__ == "__main__":
