@@ -1,12 +1,12 @@
 {
-  "date_evaluation": "2026-10-19T14:49:16",
+  "date_evaluation": "2026-10-19T15:04:17",
   "modele": {
-    "version": "919340cd633b",
-    "empreinte_sha256": "919340cd633b56d211e22341755e8f071a519f300d2c139cd5ba2edde436acb5",
+    "version": "7fdbc1bc8e8b",
+    "empreinte_sha256": "7fdbc1bc8e8b23b2897ea3edc1f0ae37e4ecfd84eeff205cb2804cdff10915a6",
     "fichier": "modele_duree_trajet.joblib",
-    "date_entrainement": "2026-10-19T14:49:11",
+    "date_entrainement": "2026-10-19T15:04:12",
     "date_entrainement_source": "entrainement",
-    "mae_minutes": 3.016,
+    "mae_minutes": 3.011,
     "mae_source": "test_entrainement",
     "jeu_evaluation": null,
     "date_evaluation": null,
@@ -22,9 +22,9 @@
     ]
   },
   "metriques": {
-    "mae_minutes": 3.924,
-    "rmse_minutes": 7.155,
-    "r2": 0.724,
+    "mae_minutes": 3.916,
+    "rmse_minutes": 7.141,
+    "r2": 0.7251,
     "mae_baseline_mediane_minutes": 8.852,
     "duree_reelle_moyenne_minutes": 17.078
   }

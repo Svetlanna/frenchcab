@@ -1,5 +1,5 @@
 {
-  "debut": "2026-10-19T14:47:54",
+  "debut": "2026-10-19T15:03:19",
   "etapes_demandees": [
     "verification",
     "entrainement",
@@ -21,14 +21,14 @@
         "modele_candidat": "modeles\\candidat\\modele_duree_trajet.joblib"
       },
       "statut": "OK",
-      "duree_s": 77.4
+      "duree_s": 52.8
     },
     {
       "nom": "evaluation",
       "details": {
         "candidat": {
-          "version": "919340cd633b",
-          "mae_minutes": 3.924
+          "version": "7fdbc1bc8e8b",
+          "mae_minutes": 3.916
         },
         "production": {
           "version": "c3cecda3ba02",
@@ -37,7 +37,7 @@
         "jeu_evaluation": "tlc_eval_2026-01.csv"
       },
       "statut": "OK",
-      "duree_s": 10.6
+      "duree_s": 10.5
     },
     {
       "nom": "controle",
@@ -56,11 +56,11 @@
     },
     {
       "nom": "prediction",
-      "statut": "ECHEC",
-      "message": "la prédiction d'exemple a échoué (code 2)",
-      "duree_s": 0.1
+      "details": {},
+      "statut": "OK",
+      "duree_s": 9.7
     }
   ],
-  "resultat": "ERREUR TECHNIQUE : voir l'étape en échec",
-  "fin": "2026-10-19T14:49:28"
+  "resultat": "SUCCES : le candidat est prêt (non activé)",
+  "fin": "2026-10-19T15:04:39"
 }

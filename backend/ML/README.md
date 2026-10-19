@@ -330,7 +330,7 @@ CMD ["uvicorn", "api_prediction:app", "--host", "0.0.0.0", "--port", "8000"]
 
 - `ports "8000:8000"` : le port 8000 du PC mène au port 8000 du conteneur
 
-### Lancer
+### Démarrer le projet
 
 ```bash
 cd C:\python-projs\frenchcab
@@ -346,14 +346,13 @@ Puis ouvrir [http://localhost:8000/api/prediction/13](http://localhost:8000/api/
 3. `uvicorn api_prediction:app --port 8000` → vérifie l'API sans Docker
 4. `docker compose up --build` → lance tout : backend, ml et frontend
 
-
 ## 5. Identification, évaluation et contrôle qualité du modèle
 
 ### Identifier le modèle utilisé
 
 Les informations sont stockées dans `backend/modele_duree_trajet.meta.json`, à côté du modèle, et exposées par l'API :
 
-```
+```text
 GET /modele                      (backend, port 3001)
 GET /prediction/modele           (gateway, port 3000)
 ```
@@ -407,7 +406,7 @@ Extrait du rapport :
 `mae_baseline_mediane_minutes` est la MAE d'un prédicteur qui répondrait toujours la durée médiane : c'est le point de comparaison du seuil.
 
 | Option | Rôle |
-|---|---|
+| --- | --- |
 | `--donnees <fichier>` | autre jeu TLC (CSV ou parquet ; parquet demande `pyarrow`) avec les colonnes `tpep_pickup_datetime`, `tpep_dropoff_datetime`, `trip_distance`, `PULocationID`, `DOLocationID` |
 | `--zones <fichier>` | `taxi_zone_lookup.csv` (par défaut `backend/eval/taxi_zone_lookup.csv`) |
 | `--echantillon N` | n'évalue que N courses (0 = toutes) |
@@ -423,7 +422,7 @@ python controle_qualite.py --rapport rapport.json   # à partir d'un rapport exi
 ```
 
 | Code retour | Signification |
-|---|---|
+| --- | --- |
 | `0` | MAE <= seuil |
 | `1` | MAE > seuil : échec qualité, la CI échoue |
 | `2` | erreur technique (modèle, données ou rapport introuvables) |
@@ -444,3 +443,22 @@ curl http://localhost:3001/modele
 ```
 
 La version change, la date d'entraînement est enregistrée et la MAE sur le jeu TLC est mise à jour. Commiter ensuite le `.joblib` et son `.meta.json` ensemble.
+
+## 6. MLOps workflow
+
+Pour lancer la comparaison du modèle en production et du modèle 'candidat', dans le terminal depuis la racine du projet :
+
+```bash
+cd backend/
+py pipeline.py
+```
+
+Le pipeline :
+
+* vérifie les bases et jeux de données ainsi que l'existence d'un seuil de qualité et d'un modèle ML en production
+* entraîne et teste le modèle modele_duree_trajet.joblib avec un échantillon de 1017292 enregistrements 
+* évalue le modèle 'candidat' et le modèle en production avec un même jeu de données et émet un rapport par version du modèle pour comparaison
+* effectue un contrôle de la qualité du modèle 'candidat' et met à jour le 'rapport_candidat' émis pendant son évaluation
+* effectue les 12 tests unitaires du pipeline
+* effectue une prédiction avec le modèle candidat pour comparaison avec le modèle en production
+* affiche dans la console et dans un fichier JSON le résumé de l'exécution du pipeline ainsi que la comparaison des 2 modèles
