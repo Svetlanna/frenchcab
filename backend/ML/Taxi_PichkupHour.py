@@ -264,6 +264,12 @@ def main() -> None:
     p = argparse.ArgumentParser(description="modèle de durée de trajet")
     p.add_argument("--db", type=Path, default=DEFAULT_DB)
     p.add_argument("echantillon",nargs="?", type=int, default=1_000_000, help="nombre approximatif de courses à utiliser (0=toutes)")
+    # >>> NOUVEAU (1/3) : où enregistrer le modèle entraîné.
+    # Par défaut, le même fichier qu'avant (comportement inchangé).
+    # Le pipeline l'utilise pour écrire un modèle "candidat" SANS écraser
+    # le modèle en production.
+    p.add_argument("--sortie", type=Path, default=CHEMIN_MODELE,
+                   help="fichier .joblib à écrire (défaut : modèle en production)")
 
     a = p.parse_args()
     t0 = time.time()
@@ -352,13 +358,17 @@ def main() -> None:
     # Sauvegarde
     # -------------------------
 
-    joblib.dump(pipeline, CHEMIN_MODELE)
+    # >>> NOUVEAU (2/3) : on écrit dans a.sortie (et plus toujours dans CHEMIN_MODELE)
+    # le dossier de sortie est créé s'il n'existe pas encore
+    a.sortie.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(pipeline, a.sortie)
 
     # identification du modèle : date d'entraînement + MAE sur le jeu de test
     from datetime import datetime
     from modele_info import ecrire_meta
+    # >>> NOUVEAU (3/3) : la carte d'identité (.meta.json) est écrite à côté du bon fichier
     ecrire_meta(
-        CHEMIN_MODELE,
+        a.sortie,
         date_entrainement=datetime.now().isoformat(timespec="seconds"),
         date_entrainement_source="entrainement",
         mae_test_minutes=round(float(metriques_test["mae"]), 3),
@@ -366,7 +376,7 @@ def main() -> None:
     )
 
     print(
-        f"Modèle sauvegardé : {CHEMIN_MODELE} "
+        f"Modèle sauvegardé : {a.sortie} "
         f"({time.time() - t0:.0f}s)"
     )
 
