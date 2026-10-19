@@ -314,14 +314,14 @@ cd backend/ML
 python Taxi_PichkupHour.py                  # avec la distance (1 million de courses)
 python Taxi_PichkupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
 python Taxi_PichkupHour.py --sans-distance  # seulement les zones et l'heure
-``` -->
+```
 
-<!-- ### 2. La prédiction — `taxi_duree_prediction.py`
+### 2. La prédiction — `taxi_duree_prediction.py`
 
 Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien
 
 | Fonction | Rôle |
-|---|---|
+| --- | --- |
 | `charger_modele()` | Ouvre `modele_duree_trajet.joblib` |
 | `charger_courses(db, [uid])` | `SELECT ... FROM trajets WHERE uid_trajet IN (...)`, puis la jointure avec `localisations` |
 | `predire(modele, df)` | Applique `construire_variables()` (**la même** fonction qu'à l'entraînement), puis `modele.predict()` |
@@ -361,7 +361,7 @@ GET /api/prediction/{uid_trajet}
 ```
 
 | Partie du code | Rôle |
-|---|---|
+| --- | --- |
 | `app = FastAPI(...)` | Crée l'application web |
 | `http://localhost:4200` | Autorise Angular (port 4200) à appeler l'API (port 8000) |
 | Chargement du modèle | Le modèle est chargé **une seule fois**, au démarrage, et pas à chaque requête |
@@ -372,7 +372,7 @@ GET /api/prediction/{uid_trajet}
 #### Réponses possibles
 
 | Route | Code HTTP | Réponse |
-|---|---|---|
+| --- | --- | --- |
 | `/api/prediction/13` | 200 | JSON de la course (voir ci-dessous) |
 | `/api/prediction/99999999` | 404 | `{"detail": "course 99999999 introuvable"}` |
 | `/api/prediction/abc` | 422 | Erreur de validation : ce n'est pas un nombre |
@@ -458,7 +458,7 @@ Puis ouvrir [http://localhost:8000/api/prediction/13](http://localhost:8000/api/
 ### Ordre de lancement (résumé)
 
 1. `python Taxi_PichkupHour.py` → crée le modèle `.joblib` (seulement si les données changent)
-2. `python taxi_duree_prediction.py.py` → vérifie qu'une prédiction marche
+2. `python taxi_duree_prediction.py` → vérifie qu'une prédiction marche
 3. `uvicorn api_prediction:app --port 8000` → vérifie l'API sans Docker
 4. `docker compose up --build` → lance tout : backend, ml et frontend
 

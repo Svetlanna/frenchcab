@@ -1,0 +1,10 @@
+{
+  "empreinte": "919340cd633b56d211e22341755e8f071a519f300d2c139cd5ba2edde436acb5",
+  "date_entrainement": "2026-10-19T14:49:11",
+  "date_entrainement_source": "entrainement",
+  "mae_test_minutes": 3.016,
+  "lignes_entrainement": 798655,
+  "mae_evaluation_minutes": 3.924,
+  "jeu_evaluation": "tlc_eval_2026-01.csv",
+  "date_evaluation": "2026-10-19T14:49:16"
+}

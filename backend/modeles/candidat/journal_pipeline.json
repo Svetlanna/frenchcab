@@ -1,0 +1,66 @@
+{
+  "debut": "2026-10-19T14:47:54",
+  "etapes_demandees": [
+    "verification",
+    "entrainement",
+    "evaluation",
+    "controle",
+    "tests",
+    "prediction"
+  ],
+  "etapes": [
+    {
+      "nom": "verification",
+      "details": {},
+      "statut": "OK",
+      "duree_s": 0.0
+    },
+    {
+      "nom": "entrainement",
+      "details": {
+        "modele_candidat": "modeles\\candidat\\modele_duree_trajet.joblib"
+      },
+      "statut": "OK",
+      "duree_s": 77.4
+    },
+    {
+      "nom": "evaluation",
+      "details": {
+        "candidat": {
+          "version": "919340cd633b",
+          "mae_minutes": 3.924
+        },
+        "production": {
+          "version": "c3cecda3ba02",
+          "mae_minutes": 3.921
+        },
+        "jeu_evaluation": "tlc_eval_2026-01.csv"
+      },
+      "statut": "OK",
+      "duree_s": 10.6
+    },
+    {
+      "nom": "controle",
+      "details": {
+        "seuil_mae_minutes": 5.0,
+        "admissible": true
+      },
+      "statut": "OK",
+      "duree_s": 0.1
+    },
+    {
+      "nom": "tests",
+      "details": {},
+      "statut": "OK",
+      "duree_s": 6.1
+    },
+    {
+      "nom": "prediction",
+      "statut": "ECHEC",
+      "message": "la prédiction d'exemple a échoué (code 2)",
+      "duree_s": 0.1
+    }
+  ],
+  "resultat": "ERREUR TECHNIQUE : voir l'étape en échec",
+  "fin": "2026-10-19T14:49:28"
+}
