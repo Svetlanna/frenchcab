@@ -41,6 +41,7 @@
               <td>{{ course.total_amount | currency: 'USD' }}</td>
               <td>
                 <button class="details-button" (click)="ouvrirDetails(course)">Détails</button>
+                <button class="prediction-button" (click)="ouvrirPrediction(course)">Prédiction</button>
               </td>
             </tr>
           } @empty {

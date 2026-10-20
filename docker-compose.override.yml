@@ -11,11 +11,23 @@ services:
       args:
         BUILD_CONFIG: development
     container_name: conteneur-front
-    
-    
+  
     volumes:
       - ./frontend:/app
   
   gateway:
     build: ./gateway
     container_name: conteneur-gateway
+  
+  mlflow:
+    build:
+      context: ./mlflow
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    restart: unless-stopped
+
+volumes:
+  mlflow_data:

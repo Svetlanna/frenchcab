@@ -444,6 +444,7 @@ curl http://localhost:3001/modele
 
 La version change, la date d'entraînement est enregistrée et la MAE sur le jeu TLC est mise à jour. Commiter ensuite le `.joblib` et son `.meta.json` ensemble.
 
+<<<<<<< HEAD
 ## 6. MLOps workflow
 
 Pour lancer la comparaison du modèle en production et du modèle 'candidat', dans le terminal depuis la racine du projet :
@@ -462,3 +463,25 @@ Le pipeline :
 * effectue les 12 tests unitaires du pipeline
 * effectue une prédiction avec le modèle candidat pour comparaison avec le modèle en production
 * affiche dans la console et dans un fichier JSON le résumé de l'exécution du pipeline ainsi que la comparaison des 2 modèles
+=======
+
+
+### Semaine 4 - Comparaison entre la version actuelle du modéle et une version candidate `comparer_modeles.py`
+
+```bash
+cd backend/ML
+python comparer_modeles.py 
+
+``` 
+
+le script compare automatiquement tous les modèles .joblib du dossier backend/modeles et:
+- Évalue chaque modèle sur le même jeu de test.
+- Classe les modèles selon leur MAE.
+- Identifie les modèles conformes au seuil de qualité.
+- Active le meilleur modèle conforme dans config/modele_actif.json.
+- Conserve la configuration existante si aucun modèle n'est conforme.
+
+le modéle actif se trouve  dans backend/config/modele_actif.json la version qui est utilisée par frenchcab pour prédire ses courses.
+
+Pour changer de version, il suffit de changer le modéle dans ce fichier.
+>>>>>>> malick

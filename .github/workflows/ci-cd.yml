@@ -83,6 +83,9 @@ jobs:
 
       - name: 6. Construire le frontend
         run: docker build -t emfall/frenchcab-frontend:latest ./frontend
+      
+      - name: 6.1. Construire le mlflow
+        run: docker build -t emfall/frenchcab-mlflow:latest ./mlflow
 
       - name: 7. Lancer les conteneurs
         run: docker compose up -d
@@ -126,6 +129,9 @@ jobs:
         if: success()
         run: docker push emfall/frenchcab-frontend:latest
 
+      - name: 14. Push mlflow
+        if: success()
+        run: docker push emfall/frenchcab-mlflow:latest
   # ---------------------------------------------------------------
   # 3. Déploiement sur la VM Azure
   #    Uniquement après le push des images (plus de course CI/CD),
@@ -169,6 +175,7 @@ jobs:
             attendre http://localhost:3001/modele "backend (modèle chargé)"
             attendre "http://localhost:3000/course/courses?limit=1" "gateway -> backend -> base de données"
             attendre http://localhost:4200/ "frontend"
+            attendre http://localhost:5000/ "mlflow"
 
             echo "Déploiement réussi : services opérationnels."
             docker compose ps

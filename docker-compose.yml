@@ -28,3 +28,13 @@ services:
     depends_on:
       - backend
     restart: always
+
+  mlflow:
+    image: emfall/frenchcab-mlflow:latest
+
+    container_name: conteneur-mlflow
+    ports:
+      - "5000:5000"
+    depends_on:
+      - backend
+    restart: always

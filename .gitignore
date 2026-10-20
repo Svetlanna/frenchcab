@@ -8,7 +8,7 @@ backend/data/query.zip
 backend/data/query/**
 __pycache__/
 *.pyc
-backend/ML/modele_duree_trajet.joblib
+backend/ML/modeles/*
 *.env
 *.joblib
 backend/ML/rapport_evaluation.json

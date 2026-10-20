@@ -182,6 +182,100 @@ python Taxi_PichkupHour.py
 ```
 Une fois le fichier exécuté il va sauvegarder le modèle entrainé `modele_duree_trajet.joblib`.
 
+##### Règles de nettoyage
+
+1. **date_invalide**
+    * Date de départ ou d'arrivée illisible.
+    * Impossible de calculer la durée.
+2. **hors_annee**
+    * Départ hors de 2023 _(l'export contient des courses du 31/12/2022)_
+3. **duree_negative_ou_nulle**
+    * Arrivée avant ou à l'heure du départ.
+    * Erreur de compteur.
+4. **duree_sup_6h**
+    * Course de plus de 6 h.
+    * Compteur resté allumé _(vu : 23 h pour 1,2 mile)_.
+5. **distance_nulle_ou_aberrante**
+    * Distance ≤ 0 ou > 200 miles.
+    * Distance non enregistrée.
+6. **montant_negatif_ou_nul**
+    * Tarif ou total ≤ 0.
+    * Lignes d'annulation ou de remboursement.
+7. **montant_aberrant**
+    * Total > 1 000 $.
+    * Saisie erronée.
+8. **vendor_inconnu**
+    * VendorID hors 1, 2, 6, 7.
+    * Code absent du dictionnaire.
+9. **ratecode_invalide**
+    * RatecodeID hors 1–6 et 99.
+    * Code absent du dictionnaire.
+10. **payment_type_invalide**
+    * payment_type hors 0–6.
+    * Code absent du dictionnaire.
+
+11. **Doublons**
+
+Est considéré 'doublon' une ligne qui est identique à une autre dans l'échantillon de donnéees traité.
+
+![ATTENTION] Deux valeurs sont vidées sans supprimer la course : 
+    * passenger_count = 0
+    * RatecodeID = 99 
+Ils deviennent « inconnu » (case vide).
+
+Deux fichiers sont écrits dans backend/data/clean/
+    * yellow_tripdata_2023.csv   les courses propres, 23 colonnes (les 19 du dictionnaire + 4 ajoutées). il peut peser plusieurs Go ,vérifier l'espace disque
+    * rapport_extraction_2023.json  lignes lues, gardées, rejetées, taux de rejet et détail par motif.
+
+
+#### Colonnes ajoutées
+
+**cbd_congestion_fee**
+0 pour 2023 (taxe créée le 5 janvier 2025), gardée pour un schéma identique d'une année à l'autre
+**trip_duration_min**
+durée de la course en minutes
+**pickup_hour**
+heure de départ (0–23)
+
+**pickup_weekday**
+jour de départ (0 = lundi, 6 = dimanche)
+
+![ATTENTION]
+ Remboursements--- une annulation apparaît en deux lignes, une négative et une positive. La négative est retirée, la positive reste : la course compte donc une fois alors qu'elle a été remboursée
+
+• doublons --- ils ne sont détectés qu'à l'intérieur d'un même morceau , deux lignes identiques dans deux morceaux différents
+• frais d'aéroport, VendorID 1 : pour les courses à l'aéroport, extra semble déjà contenir les 1,25 $ de airport_fee. La somme des colonnes dépasse alors total_amount de 1,25 $ ; se fier à total_amount
+•pourboires en espèces  ----- ils ne sont pas enregistrés ; tip_amount ne concerne que les paiements par carte
+• improvement_surcharge : quelques lignes sont à 0,30 $ au lieu de 1,00 $ (ancien tarif) ; elles sont gardées
+•test le script a été vérifié sur un petit extrait, pas encore sur les 6 Go complets
+
+ lancer d'abord avec --nrows 100000 et relire le rapport    python backend/etl/extraction.py --nrows 100000
+
+ ## Problématiques
+
+Incohérences entre colonnes et tables sql -> ajouter les quelques colonnes manquantes dans la table "trajets" et  s'assurer de la présence du champ `uid_trajet` qui est un identifiant unique auutoincrémenté et fait office de clé primaire.
+
+
+## Creation  de la base 
+- Créer une base vide 'frenchcab.db' dans le dossier /backend/data
+- Executer les fichiers extraction.py puis load_taxi_data.py dans /backend/etl
+    - py extraction.py
+    - py load_taxi_data.py
+
+
+## Backend Node.js
+
+### routes
+
+GET http://localhost:3001/api/courses = toutes les courses (pagination a 100 première course sinon crash car trop de course)
+
+Résultat docker : 
+conteneur-back  | App connecté sur le port 3001
+conteneur-back  |  Connexion réussie à la base SQLite (frenchcab.db) !
+conteneur-back  | Erreur SQL : null
+conteneur-back  | Nombre de courses : 100
+
+GET http://localhost:3001/api/courseID?id=1 = course par ID
 2. Interroger Fast-API
 Une fois le modèle sauvegarder on peut lancer une prédiction sur Fastapi ou directement dans le Front.
 Pour Fastapi : 

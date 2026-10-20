@@ -29,11 +29,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
+import mlflow
+import mlflow.sklearn
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "data" / "frenchcab.db"
-CHEMIN_MODELE = BASE_DIR  / "modele_duree_trajet.joblib"
+CHEMIN_MODELE = BASE_DIR  /"modeles"/ "modele_v2_duree_trajet.joblib"
 
 TABLE_ZONES = "localisations"
 TABLE_TRAJETS = "trajets"
@@ -272,6 +274,11 @@ def main() -> None:
                    help="fichier .joblib à écrire (défaut : modèle en production)")
 
     a = p.parse_args()
+    
+    # Configuration MLflow
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("FrenchCab - prediction duree v2")
+    
     t0 = time.time()
 
     df = charger_donnees(a.db, a.echantillon)
@@ -298,66 +305,124 @@ def main() -> None:
         f"test : {len(X_test):,}"
     )
 
+    # # -------------------------
+    # # Baselines
+    # # -------------------------
+
+    # print("baselines")
+    # naif = DummyRegressor(strategy="median").fit(X_train, y_train)
+    # evaluer("baseline toujours la médiane", y_test, naif.predict(X_test))
+
+    # # Médiane historique par paire départ -> arrivée
+    # mediane_paire = y_train.groupby(X_train["trajet_zones"]).median()
+
+    # pred_paire = (
+    #     X_test["trajet_zones"]
+    #     .map(mediane_paire)
+    #     .fillna(y_train.median())
+    # )
+    # evaluer("baseline médiane par paire de zones", y_test, pred_paire)
+
+    # # Baseline distance
+    # lineaire = LinearRegression().fit(X_train[["trip_distance"]], y_train)
+    # evaluer("baseline régression / distance", y_test, lineaire.predict(X_test[["trip_distance"]]))
+
+    # # -------------------------
+    # # Modèle
+    # # -------------------------
+
+    # print("entrainement du gradient boosting")
+    # pipeline = creer_pipeline(numeriques).fit(X_train, y_train)
+
+    # # -------------------------
+    # # Evaluation
+    # # -------------------------
+
+    # print("evaluation")
+    # evaluer("gradient boosting, train", y_train, pipeline.predict(X_train))
+    # metriques_test = evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
+
+    # # -------------------------
+    # # Importance des variables
+    # # -------------------------
+
+    # ech = X_test.sample(min(5000, len(X_test)), random_state=GRAINE)
+
+    # imp = permutation_importance(pipeline, ech, y_test.loc[ech.index], n_repeats=5, random_state=GRAINE, scoring="neg_mean_absolute_error")
+
+    # print("importance ""(hausse de l'erreur quand on mélange la variable)")
+
+    # for nom, val in sorted(
+    #     zip(X.columns, imp.importances_mean),
+    #     key=lambda t: -t[1]
+    # ):
+    #     print(
+    #         f"  {nom:<18} "
+    #         f"{val:+5.2f} min"
+    #     )
+
+    # # -------------------------
+    # # Sauvegarde
+    # # -------------------------
+
+    # joblib.dump(pipeline, CHEMIN_MODELE)
+
+    # # identification du modèle : date d'entraînement + MAE sur le jeu de test
+    # from datetime import datetime
+    # from modele_info import ecrire_meta
+    # ecrire_meta(
+    #     CHEMIN_MODELE,
+    #     date_entrainement=datetime.now().isoformat(timespec="seconds"),
+    #     date_entrainement_source="entrainement",
+    #     mae_test_minutes=round(float(metriques_test["mae"]), 3),
+    #     lignes_entrainement=int(len(X_train)),
+    # )
+
+    # print(
+    #     f"Modèle sauvegardé : {CHEMIN_MODELE} "
+    #     f"({time.time() - t0:.0f}s)"
+    # )
+
+
     # -------------------------
-    # Baselines
+    # Expérience MLflow
     # -------------------------
 
-    print("baselines")
-    naif = DummyRegressor(strategy="median").fit(X_train, y_train)
-    evaluer("baseline toujours la médiane", y_test, naif.predict(X_test))
+    with mlflow.start_run(run_name="gradient-boosting-duree"):
 
-    # Médiane historique par paire départ -> arrivée
-    mediane_paire = y_train.groupby(X_train["trajet_zones"]).median()
+        # Paramètres généraux
+        mlflow.log_params({
+            "echantillon_demande": a.echantillon,
+            "graine": GRAINE,
+            "test_size": 0.2,
+            "modele": "HistGradientBoostingRegressor",
+            "max_iter": 300,
+            "learning_rate": 0.1,
+            "max_leaf_nodes": 31,
+            "early_stopping": True,
+            "nombre_lignes_train": len(X_train),
+            "nombre_lignes_test": len(X_test),
+        })
 
-    pred_paire = (
-        X_test["trajet_zones"]
-        .map(mediane_paire)
-        .fillna(y_train.median())
-    )
-    evaluer("baseline médiane par paire de zones", y_test, pred_paire)
+        # -------------------------
+        # Baselines
+        # -------------------------
 
-    # Baseline distance
-    lineaire = LinearRegression().fit(X_train[["trip_distance"]], y_train)
-    evaluer("baseline régression / distance", y_test, lineaire.predict(X_test[["trip_distance"]]))
+        print("baselines")
+        resultats = {}
 
-    # -------------------------
-    # Modèle
-    # -------------------------
-
-    print("entrainement du gradient boosting")
-    pipeline = creer_pipeline(numeriques).fit(X_train, y_train)
-
-    # -------------------------
-    # Evaluation
-    # -------------------------
-
-    print("evaluation")
-    evaluer("gradient boosting, train", y_train, pipeline.predict(X_train))
-    metriques_test = evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
-
-    # -------------------------
-    # Importance des variables
-    # -------------------------
-
-    ech = X_test.sample(min(5000, len(X_test)), random_state=GRAINE)
-
-    imp = permutation_importance(pipeline, ech, y_test.loc[ech.index], n_repeats=5, random_state=GRAINE, scoring="neg_mean_absolute_error")
-
-    print("importance ""(hausse de l'erreur quand on mélange la variable)")
-
-    for nom, val in sorted(
-        zip(X.columns, imp.importances_mean),
-        key=lambda t: -t[1]
-    ):
-        print(
-            f"  {nom:<18} "
-            f"{val:+5.2f} min"
+        naif = DummyRegressor(strategy="median").fit(X_train, y_train)
+        resultats["baseline_mediane"] = evaluer(
+            "baseline toujours la médiane",
+            y_test,
+            naif.predict(X_test)
         )
 
-    # -------------------------
-    # Sauvegarde
-    # -------------------------
+        mediane_paire = y_train.groupby(
+            X_train["trajet_zones"]
+        ).median()
 
+<<<<<<< HEAD
     # >>> NOUVEAU (2/3) : on écrit dans a.sortie (et plus toujours dans CHEMIN_MODELE)
     # le dossier de sortie est créé s'il n'existe pas encore
     a.sortie.parent.mkdir(parents=True, exist_ok=True)
@@ -379,6 +444,153 @@ def main() -> None:
         f"Modèle sauvegardé : {a.sortie} "
         f"({time.time() - t0:.0f}s)"
     )
+=======
+        pred_paire = (
+            X_test["trajet_zones"]
+            .map(mediane_paire)
+            .fillna(y_train.median())
+        )
+
+        resultats["baseline_paire_zones"] = evaluer(
+            "baseline médiane par paire de zones",
+            y_test,
+            pred_paire
+        )
+
+        lineaire = LinearRegression().fit(
+            X_train[["trip_distance"]], y_train
+        )
+
+        resultats["baseline_distance"] = evaluer(
+            "baseline régression / distance",
+            y_test,
+            lineaire.predict(X_test[["trip_distance"]])
+        )
+
+        # Enregistrer les métriques des baselines
+        for nom, metriques in resultats.items():
+            mlflow.log_metrics({
+                f"{nom}_{metrique}": float(valeur)
+                for metrique, valeur in metriques.items()
+            })
+
+        # -------------------------
+        # Entraînement du modèle
+        # -------------------------
+
+        print("entrainement du gradient boosting")
+
+        pipeline = creer_pipeline(numeriques).fit(
+            X_train, y_train
+        )
+
+        # -------------------------
+        # Évaluation
+        # -------------------------
+
+        print("evaluation")
+
+        metriques_train = evaluer(
+            "gradient boosting, train",
+            y_train,
+            pipeline.predict(X_train)
+        )
+
+        metriques_test = evaluer(
+            "gradient boosting, test",
+            y_test,
+            pipeline.predict(X_test)
+        )
+
+        mlflow.log_metrics({
+            f"train_{nom}": float(valeur)
+            for nom, valeur in metriques_train.items()
+        })
+
+        mlflow.log_metrics({
+            f"test_{nom}": float(valeur)
+            for nom, valeur in metriques_test.items()
+        })
+
+        # -------------------------
+        # Importance des variables
+        # -------------------------
+
+        ech = X_test.sample(
+            min(5000, len(X_test)),
+            random_state=GRAINE
+        )
+
+        imp = permutation_importance(
+            pipeline,
+            ech,
+            y_test.loc[ech.index],
+            n_repeats=5,
+            random_state=GRAINE,
+            scoring="neg_mean_absolute_error"
+        )
+
+        importance_df = pd.DataFrame({
+            "variable": X.columns,
+            "importance": imp.importances_mean
+        }).sort_values("importance", ascending=False)
+
+        print("importance (hausse de l'erreur quand on mélange la variable)")
+
+        for _, ligne in importance_df.iterrows():
+            print(
+                f"  {ligne['variable']:<18} "
+                f"{ligne['importance']:+5.2f} min"
+            )
+
+        # CSV consultable dans les artefacts MLflow
+        mlflow.log_text(
+            importance_df.to_csv(index=False),
+            "importance_variables.csv"
+        )
+
+        # -------------------------
+        # Sauvegarde du modèle
+        # -------------------------
+
+        joblib.dump(pipeline, CHEMIN_MODELE)
+
+        from datetime import datetime
+        from modele_info import ecrire_meta
+
+        ecrire_meta(
+            CHEMIN_MODELE,
+            date_entrainement=datetime.now().isoformat(timespec="seconds"),
+            date_entrainement_source="entrainement",
+            mae_test_minutes=round(
+                float(metriques_test["mae"]), 3
+            ),
+            lignes_entrainement=int(len(X_train)),
+        )
+
+        # Enregistrer le modèle et sa version joblib dans MLflow
+        mlflow.sklearn.log_model(
+        sk_model=pipeline,
+        name="modele",
+        skops_trusted_types=[
+            "sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor"
+        ],
+    )
+
+        mlflow.log_artifact(str(CHEMIN_MODELE))
+
+        # Informations utiles pour comparer les entraînements
+        mlflow.set_tag("projet", "FrenchCab")
+        mlflow.set_tag("type", "entrainement")
+        mlflow.set_tag("cible", "trip_duration_min")
+
+        print(f"Run MLflow : {mlflow.active_run().info.run_id}")
+
+        print(
+            f"Modèle sauvegardé : {CHEMIN_MODELE} "
+            f"({time.time() - t0:.0f}s)"
+        )
+>>>>>>> malick
 
 
 if __name__ == "__main__":
