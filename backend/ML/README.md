@@ -444,3 +444,24 @@ curl http://localhost:3001/modele
 ```
 
 La version change, la date d'entraînement est enregistrée et la MAE sur le jeu TLC est mise à jour. Commiter ensuite le `.joblib` et son `.meta.json` ensemble.
+
+
+
+### Semaine 4 - Comparaison entre la version actuelle du modéle et une version candidate `comparer_modeles.py`
+
+```bash
+cd backend/ML
+python comparer_modeles.py 
+
+``` 
+
+le script compare automatiquement tous les modèles .joblib du dossier backend/modeles et:
+- Évalue chaque modèle sur le même jeu de test.
+- Classe les modèles selon leur MAE.
+- Identifie les modèles conformes au seuil de qualité.
+- Active le meilleur modèle conforme dans config/modele_actif.json.
+- Conserve la configuration existante si aucun modèle n'est conforme.
+
+le modéle actif se trouve  dans backend/config/modele_actif.json la version qui est utilisée par frenchcab pour prédire ses courses.
+
+Pour changer de version, il suffit de changer le modéle dans ce fichier.
