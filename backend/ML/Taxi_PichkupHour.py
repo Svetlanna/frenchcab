@@ -422,29 +422,6 @@ def main() -> None:
             X_train["trajet_zones"]
         ).median()
 
-<<<<<<< HEAD
-    # >>> NOUVEAU (2/3) : on écrit dans a.sortie (et plus toujours dans CHEMIN_MODELE)
-    # le dossier de sortie est créé s'il n'existe pas encore
-    a.sortie.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(pipeline, a.sortie)
-
-    # identification du modèle : date d'entraînement + MAE sur le jeu de test
-    from datetime import datetime
-    from modele_info import ecrire_meta
-    # >>> NOUVEAU (3/3) : la carte d'identité (.meta.json) est écrite à côté du bon fichier
-    ecrire_meta(
-        a.sortie,
-        date_entrainement=datetime.now().isoformat(timespec="seconds"),
-        date_entrainement_source="entrainement",
-        mae_test_minutes=round(float(metriques_test["mae"]), 3),
-        lignes_entrainement=int(len(X_train)),
-    )
-
-    print(
-        f"Modèle sauvegardé : {a.sortie} "
-        f"({time.time() - t0:.0f}s)"
-    )
-=======
         pred_paire = (
             X_test["trajet_zones"]
             .map(mediane_paire)
@@ -590,7 +567,6 @@ def main() -> None:
             f"Modèle sauvegardé : {CHEMIN_MODELE} "
             f"({time.time() - t0:.0f}s)"
         )
->>>>>>> malick
 
 
 if __name__ == "__main__":
