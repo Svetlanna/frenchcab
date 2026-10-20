@@ -12,13 +12,15 @@ from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parent          # .../frenchcab/backend
 DOSSIER_ML = BACKEND / "ML"
+DOSSIER_MODELES = BACKEND / "modeles"
 DOSSIER_ETL = BACKEND / "etl"
 DB = BACKEND / "data" / "frenchcab.db"
 JEU_EVALUATION = BACKEND / "eval" / "tlc_eval_2026-01.csv"
-MODELE_PRODUCTION = BACKEND / "modele_duree_trajet.joblib"
+MODELE_PRODUCTION = DOSSIER_MODELES / "modele_duree_trajet.joblib"
 SEUIL = DOSSIER_ML / "seuil_qualite.json"
 
 
+DOSSIER_MODELES = BACKEND / "modeles"
 DOSSIER_CANDIDAT = BACKEND / "modeles" / "candidat"
 MODELE_CANDIDAT = DOSSIER_CANDIDAT / "modele_duree_trajet.joblib"
 RAPPORT_CANDIDAT = DOSSIER_CANDIDAT / "rapport_candidat.json"
