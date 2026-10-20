@@ -61,4 +61,18 @@ async function getZones(req, res) {
 }
 
 
-module.exports = {getPrediction, getZones};
+async function getModele(req, res) {
+    try {
+        const reponse = await predictionService.getModele();
+        return res.status(200).json({ success: true, reponse: reponse.data });
+    } catch (error) {
+        console.error("Erreur modele :", error.message);
+        return res.status(error.response?.status || 500).json({
+            success: false,
+            message: error.response?.data?.detail || error.message
+        });
+    }
+}
+
+
+module.exports = {getPrediction, getZones, getModele};

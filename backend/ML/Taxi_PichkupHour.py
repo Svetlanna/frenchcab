@@ -33,7 +33,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "data" / "frenchcab.db"
-CHEMIN_MODELE = Path(__file__).resolve().parent / "modele" / "modele_duree_trajet.joblib"
+CHEMIN_MODELE = BASE_DIR  / "modele_duree_trajet.joblib"
 
 TABLE_ZONES = "localisations"
 TABLE_TRAJETS = "trajets"
@@ -232,11 +232,31 @@ def creer_pipeline(numeriques: list[str]) -> Pipeline:
     return Pipeline([("pretraitement", pretraitement), ("modele", modele)])
 
 
+def fmt_min_sec(minutes: float) -> str:
+    total_sec = round(minutes * 60)
+    m, s = divmod(total_sec, 60)
+    return f"{m:2d} min {s:02d} s"
+
+
 def evaluer(nom: str, y_vrai, y_pred) -> dict:
     mae = mean_absolute_error(y_vrai, y_pred)
     rmse = root_mean_squared_error(y_vrai, y_pred)
     r2 = r2_score(y_vrai, y_pred)
-    print(f"  {nom:<36} mae = {mae:5.2f} min | rmse = {rmse:5.2f} min | r2 = {r2:5.3f}")
+
+    print(
+        f"  {nom:<36} mae = {fmt_min_sec(mae)} | "
+        f"rmse = {fmt_min_sec(rmse)} | r2 = {r2:5.3f}"
+    )
+    return {"mae": mae, "rmse": rmse, "r2": r2}
+
+
+
+
+def evaluer2(nom: str, y_vrai, y_pred) -> dict:
+    mae = mean_absolute_error(y_vrai, y_pred)
+    rmse = root_mean_squared_error(y_vrai, y_pred)
+    r2 = r2_score(y_vrai, y_pred)
+    print(f"  {nom:<36} mae = {mae:5.2f} $ | rmse = {rmse:5.2f} $ | r2 = {r2:5.3f}")
     return {"mae": mae, "rmse": rmse, "r2": r2}
 
 
@@ -244,6 +264,12 @@ def main() -> None:
     p = argparse.ArgumentParser(description="modèle de durée de trajet")
     p.add_argument("--db", type=Path, default=DEFAULT_DB)
     p.add_argument("echantillon",nargs="?", type=int, default=1_000_000, help="nombre approximatif de courses à utiliser (0=toutes)")
+    # >>> NOUVEAU (1/3) : où enregistrer le modèle entraîné.
+    # Par défaut, le même fichier qu'avant (comportement inchangé).
+    # Le pipeline l'utilise pour écrire un modèle "candidat" SANS écraser
+    # le modèle en production.
+    p.add_argument("--sortie", type=Path, default=CHEMIN_MODELE,
+                   help="fichier .joblib à écrire (défaut : modèle en production)")
 
     a = p.parse_args()
     t0 = time.time()
@@ -260,9 +286,9 @@ def main() -> None:
     y = df["trip_duration_min"]
 
     print(
-        f"durée moyenne = {y.mean():.1f} min | "
-        f"médiane = {y.median():.1f} min"
-    )
+    f"durée moyenne = {fmt_min_sec(y.mean())} | "
+    f"médiane = {fmt_min_sec(y.median())}"
+)
 
     # train / test
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=GRAINE)
@@ -307,7 +333,7 @@ def main() -> None:
 
     print("evaluation")
     evaluer("gradient boosting, train", y_train, pipeline.predict(X_train))
-    evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
+    metriques_test = evaluer("gradient boosting, test", y_test, pipeline.predict(X_test))
 
     # -------------------------
     # Importance des variables
@@ -332,10 +358,25 @@ def main() -> None:
     # Sauvegarde
     # -------------------------
 
-    joblib.dump(pipeline, CHEMIN_MODELE)
+    # >>> NOUVEAU (2/3) : on écrit dans a.sortie (et plus toujours dans CHEMIN_MODELE)
+    # le dossier de sortie est créé s'il n'existe pas encore
+    a.sortie.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(pipeline, a.sortie)
+
+    # identification du modèle : date d'entraînement + MAE sur le jeu de test
+    from datetime import datetime
+    from modele_info import ecrire_meta
+    # >>> NOUVEAU (3/3) : la carte d'identité (.meta.json) est écrite à côté du bon fichier
+    ecrire_meta(
+        a.sortie,
+        date_entrainement=datetime.now().isoformat(timespec="seconds"),
+        date_entrainement_source="entrainement",
+        mae_test_minutes=round(float(metriques_test["mae"]), 3),
+        lignes_entrainement=int(len(X_train)),
+    )
 
     print(
-        f"Modèle sauvegardé : {CHEMIN_MODELE} "
+        f"Modèle sauvegardé : {a.sortie} "
         f"({time.time() - t0:.0f}s)"
     )
 

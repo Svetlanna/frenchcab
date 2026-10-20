@@ -1,0 +1,4 @@
+{
+  "seuil_mae_minutes": 5.0,
+  "justification": "Mesures sur 18 868 courses de janvier 2026 (jeu distinct de l'entrainement 2023) : le modele obtient une MAE de 3,92 min, contre 8,85 min pour la baseline 'toujours la mediane'. Le seuil de 5,0 min laisse environ 25 % de marge sur la MAE actuelle (pour absorber la variabilite du jeu et de legeres derives saisonnieres) tout en restant nettement sous la baseline : au-dela, le modele n'apporterait plus de gain significatif par rapport a une prediction triviale. A revoir si le modele ou le jeu d'evaluation changent."
+}

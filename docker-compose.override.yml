@@ -2,11 +2,20 @@ services:
   backend:
     build: ./backend
     container_name: conteneur-back
+    volumes:
+      - ./backend/data:/app/data 
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BUILD_CONFIG: development
     container_name: conteneur-front
+    
+    
+    volumes:
+      - ./frontend:/app
   
   gateway:
     build: ./gateway
-    container_name: contenur-gateway
+    container_name: conteneur-gateway

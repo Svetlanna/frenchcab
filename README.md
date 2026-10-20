@@ -39,26 +39,46 @@ Le projet est composé de trois principaux services, gérés via Docker Compose.
 
 ## Démarrage du projet
 
-Initialisation Git
+### Initialisation Git
+
 Cloner le repo :
-https://github.com/tomtoomuch/frenchcab.git
+[Repo Git Frenchcab](https://github.com/tomtoomuch/frenchcab.git)
+
 Demander l'accès en tant que contributeur au propriétaire tomtoomuch.
-🐳 Docker Compose
+
+### Docker Compose
+
 Le projet est désormais organisé en 3 conteneurs principaux :
-Service	Image	Port	Rôle
-gateway	python:3.14-slim	3000	API Express (routes)
-backend	python:3.14-slim	3001	API FastAPI (prédiction)
-frontend	nginx	4200	Angular
 
+| Service | Image | Port | Rôle |
+| ------- | ----- | ---- | ---- |
+| gateway | python:3.14-slim | 3000 | API Express (routes) |
+| backend | python:3.14-slim | 3001 | API FastAPI (prédiction) |
+| frontend | nginx | 4200 | Angular |
 
-Installation :
-1. Importer les images du dockerhub :docker compose pull
-2. Lancer les conteneurs :docker compose up
-🖥️ Lancement en VM
-Pour lancer la VM groupe1@{numéro api} et écrire le mot de passe. Pour ces informations voir le fichier txt envoyé par le groupe précédent.
-🌐 Lancer le Front-end
-Pour lancer le frontend faire un push sur la branch dev, puis ouvrir sur internet https://g1.valentinduflot.fr/.
-<0xF0><0x9F><0x97><0x84>️ Informations sur les données
+1. Importer les images du dockerhub
+
+  ```bash
+  docker compose pull
+  ```
+
+2. Lancer les conteneurs
+
+  ```bash
+  docker compose up
+  ```
+
+### Lancement en VM
+
+Pour lancer la VM groupe1@<url-serveur> et écrire le mot de passe.
+
+#### Lancer le Front-end
+
+Pour lancer le frontend, faire un push sur la branch dev, puis accéder à l'application à l'URL :
+[FrenchCab - Taxis Jaunes](https://g1.valentinduflot.fr/)
+
+## Informations sur les données
+
 Dictionnaire de données (Yellow Cab Trip Data)
 Nom de champ	Description	Type
 VendorID	Code qui indique quel opérateur a fourni l'enregistrement de données.
@@ -896,15 +916,19 @@ cd backend/ML
 python Taxi_PichkupHour.py                  # avec la distance (1 million de courses)
 python Taxi_PichkupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
 python Taxi_PichkupHour.py --sans-distance  # seulement les zones et l'heure
-2. La prédiction — taxi_duree_prediction.py (Utilisation)
-Ce fichier utilise le modèle déjà entraîné. Il ne réentraîne rien.
-Fonction	Rôle
-charger_modele()	Ouvre modele_duree_trajet.joblib.
-constuire_course_prediction(db, zone_depart, zone_arrivee, date_depart, heure_depart)	SELECT ... FROM trajets WHERE zone IN (...), puis la jointure avec localisations.
-predire(modele, df)	Applique construire_variables() (la même fonction qu'à l'entraînement), puis modele.predict().
-afficher(df)	Affiche une phrase par course.
-prediction(id_trajet)	Fait tout : charger, prédire et afficher.
+```
 
+### 2. La prédiction — `taxi_duree_prediction.py`
+
+Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien
+
+| Fonction | Rôle |
+| --- | --- |
+| `charger_modele()` | Ouvre `modele_duree_trajet.joblib` |
+| `charger_courses(db, [uid])` | `SELECT ... FROM trajets WHERE uid_trajet IN (...)`, puis la jointure avec `localisations` |
+| `predire(modele, df)` | Applique `construire_variables()` (**la même** fonction qu'à l'entraînement), puis `modele.predict()` |
+| `afficher(df)` | Affiche une phrase par course |
+| `prediction(id_trajet)` | Fait tout : charger, prédire et afficher |
 
 Points importants :
 - Les constantes et construire_variables sont importées depuis Taxi_PichkupHour.py
@@ -922,16 +946,21 @@ Remarque : si la course a servi à l'entraînement, le modèle l'a déjà « vue
 Angular tourne dans le navigateur, qui ne peut pas lancer un fichier Python. Il envoie des requêtes HTTP. FastAPI transforme donc la prédiction en adresse web.
 La route
 GET /api/prediction/{uid_trajet}
-Partie du code	Rôle
-app = FastAPI(...)	Crée l'application web.
-http://localhost:4200	Autorise Angular (port 4200) à appeler l'API (port 8000).
-Chargement du modèle	Le modèle est chargé une seule fois, au démarrage, et pas à chaque requête.
-@app.get("/api/prediction/{uid_trajet}")	Le nombre dans l'adresse devient le paramètre uid_trajet: int.
-HTTPException(404)	Erreur renvoyée si la course n'existe pas.
-return {...}	Le dictionnaire est renvoyé en JSON (on convertit avec int() et float(), car le JSON ne connaît pas les types de pandas).
+```
+
+| Partie du code | Rôle |
+| --- | --- |
+| `app = FastAPI(...)` | Crée l'application web |
+| `http://localhost:4200` | Autorise Angular (port 4200) à appeler l'API (port 8000) |
+| Chargement du modèle | Le modèle est chargé **une seule fois**, au démarrage, et pas à chaque requête |
+| `@app.get("/api/prediction/{uid_trajet}")` | Le nombre dans l'adresse devient le paramètre `uid_trajet: int` |
+| `HTTPException(404)` | Erreur renvoyée si la course n'existe pas |
+| `return {...}` | Le dictionnaire est renvoyé en JSON (on convertit avec `int()` et `float()`, car le JSON ne connaît pas les types de pandas) |
+
+#### Réponses possibles
 
 | Route | Code HTTP | Réponse |
-|---|---|---|
+| --- | --- | --- |
 | `/api/prediction/13` | 200 | JSON de la course (voir ci-dessous) |
 | `/api/prediction/99999999` | 404 | `{"detail": "course 99999999 introuvable"}` |
 | `/api/prediction/abc` | 422 | Erreur de validation : ce n'est pas un nombre |

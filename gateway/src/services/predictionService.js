@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-const PYTHON_SERVICE_URL = "http://backend:3001";
+const PYTHON_SERVICE_URL = process.env.BACKEND_URL || "http://backend:3001";
 
 
 
@@ -24,4 +24,8 @@ async function getZones() {
     return axios.get(`${PYTHON_SERVICE_URL}/zones`);
 }
 
-module.exports = {getPrediction, getZones};
+async function getModele() {
+    return axios.get(`${PYTHON_SERVICE_URL}/modele`);
+}
+
+module.exports = {getPrediction, getZones, getModele};
