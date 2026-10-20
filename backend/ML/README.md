@@ -481,7 +481,25 @@ le script compare automatiquement tous les modèles .joblib du dossier backend/m
 - Active le meilleur modèle conforme dans config/modele_actif.json.
 - Conserve la configuration existante si aucun modèle n'est conforme.
 
-le modéle actif se trouve  dans backend/config/modele_actif.json la version qui est utilisée par frenchcab pour prédire ses courses.
+le modéle actif se trouve  dans backend/config/modele_actif.json la version qui est utilisée par frenchcab pour prédire les courses.
 
-Pour changer de version, il suffit de changer le modéle dans ce fichier.
->>>>>>> malick
+
+Pour changer de version, il suffit de lancer la route : 
+          
+POST /modele/activer  (backend, port 3001) avec la version dans le body
+ 
+```json
+{
+  "version": "v2"
+}
+```
+Exemple de réponse :
+
+```json
+{
+  "message": "Modèle activé avec succès.",
+  "version": "v2",
+  "fichier": "modele_v2_duree_trajet.joblib"
+}
+```
+
