@@ -61,7 +61,7 @@ def enregistrer_modele_actif(chemin_modele):
         )
     except ValueError as erreur:
         raise ValueError(
-            "Le modèle doit être situé dans le dossier backend."
+            "Le modèle doit être situé dans le dossier backend/modeles."
         ) from erreur
 
     configuration = {
