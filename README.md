@@ -265,7 +265,7 @@ backend/
 ├── data/
 │   └── frenchcab.db                  ← base SQLite (tables trajets + localisations)
 └── ML/
-    ├── Taxi_PichkupHour.py          ← 1. entraînement du modèle
+    ├── Taxi_PickupHour.py          ← 1. entraînement du modèle
     ├── modele_duree_trajet.joblib   ←    modèle sauvegardé
     ├── taxi_duree_prediction.py.py     ← 2. prédiction d'une course par (zone_depart, zone_arrivee, date, heure)
     ├── api_prediction.py            ← 3. API FastAPI
@@ -287,7 +287,7 @@ flowchart TB
     n1@{ shape: rect}
 ```
 
-## 1. Le modèle — `Taxi_PichkupHour.py`
+## 1. Le modèle — `Taxi_PickupHour.py`
 
 ### Le but
 
@@ -339,9 +339,9 @@ Le **Pipeline** regroupe la préparation des données et le modèle dans **un se
 
 ```bash
 cd backend/ML
-python Taxi_PichkupHour.py                  # avec la distance (1 million de courses)
-python Taxi_PichkupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
-python Taxi_PichkupHour.py --sans-distance  # seulement les zones et l'heure
+python Taxi_PickupHour.py                  # avec la distance (1 million de courses)
+python Taxi_PickupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
+python Taxi_PickupHour.py --sans-distance  # seulement les zones et l'heure
 ```
 
 ## 2. La prédiction — `taxi_duree_prediction.py`
@@ -358,10 +358,10 @@ Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien
 
 Points importants :
 
-- Les constantes et `construire_variables` sont **importées** depuis `Taxi_PichkupHour.py`
+- Les constantes et `construire_variables` sont **importées** depuis `Taxi_PickupHour.py`
   Ainsi, l'entraînement et la prédiction préparent les données exactement de la même façon
 - `modele.feature_names_in_` donne la liste des colonnes vues pendant l'entraînement, on donne au modèle exactement ces colonnes, dans le même ordre
-- Le `if __name__ == "__main__":` de `Taxi_PichkupHour.py` empêche l'entraînement de se relancer quand on importe ce fichier
+- Le `if __name__ == "__main__":` de `Taxi_PickupHour.py` empêche l'entraînement de se relancer quand on importe ce fichier
 
 ### Lancer
 
@@ -488,7 +488,7 @@ Puis ouvrir [http://localhost:8000/api/prediction/13](http://localhost:8000/api/
 
 ## Ordre de lancement (résumé)
 
-1. `python Taxi_PichkupHour.py` → crée le modèle `.joblib` (seulement si les données changent)
+1. `python Taxi_PickupHour.py` → crée le modèle `.joblib` (seulement si les données changent)
 2. `python taxi_duree_prediction.py.py` → vérifie qu'une prédiction marche
 3. `uvicorn api_prediction:app --port 8000` → vérifie l'API sans Docker
 4. `docker compose up --build` → lance tout : backend, ml et frontend
@@ -584,7 +584,7 @@ Le seuil (5,0 min) et sa justification sont dans `seuil_qualite.json` : environ 
 ### Après un réentraînement
 
 ```bash
-python Taxi_PichkupHour.py 200000
+python Taxi_PickupHour.py 200000
 python evaluation_modele.py --maj-metadonnees
 curl http://localhost:3001/modele
 ```
@@ -714,7 +714,7 @@ graph LR
     predictionScript -->|utilise le modèle| apiServer
     angularApp -->|requête HTTP| apiServer
 ```
-1. Le modèle — Taxi_PichkupHour.py (Entraînement)
+1. Le modèle — Taxi_PickupHour.py (Entraînement)
 Le but
 Une fonction : informations de la course → durée en minutes
 C'est de l'apprentissage supervisé : le modèle apprend à partir de courses passées dont on connaît la vraie durée.
@@ -752,9 +752,9 @@ Les mesures
 - Si le score train est bien meilleur que le score test, le modèle a appris par cœur : c'est du surapprentissage.
 Lancer
 cd backend/ML
-python Taxi_PichkupHour.py                  # avec la distance (1 million de courses)
-python Taxi_PichkupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
-python Taxi_PichkupHour.py --sans-distance  # seulement les zones et l'heure
+python Taxi_PickupHour.py                  # avec la distance (1 million de courses)
+python Taxi_PickupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
+python Taxi_PickupHour.py --sans-distance  # seulement les zones et l'heure
 ```
 
 ### 2. La prédiction — `taxi_duree_prediction.py`
@@ -770,10 +770,10 @@ Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien
 | `prediction(id_trajet)` | Fait tout : charger, prédire et afficher |
 
 Points importants :
-- Les constantes et construire_variables sont importées depuis Taxi_PichkupHour.py
+- Les constantes et construire_variables sont importées depuis Taxi_PickupHour.py
   Ainsi, l'entraînement et la prédiction préparent les données exactement de la même façon.
 - modele.feature_names_in_ donne la liste des colonnes vues pendant l'entraînement, on donne au modèle exactement ces colonnes, dans le même ordre.
-- Le if __name__ == "__main__": de Taxi_PichkupHour.py empêche l'entraînement de se relancer quand on importe ce fichier.
+- Le if __name__ == "__main__": de Taxi_PickupHour.py empêche l'entraînement de se relancer quand on importe ce fichier.
 Lancer
 cd backend/ML
 python taxi_duree_prediction.py      # lance prediction(20)
@@ -927,7 +927,7 @@ Les routes de cette API :
 - GET /api/prediction/modele (backend, port 3001) : Fournit les métadonnées du modèle actuellement utilisé.
 🛣️ Ordre de lancement (Résumé)
 Le lancement complet doit se faire dans cet ordre :
-1. python Taxi_PichkupHour.py $\to$ crée le modèle .joblib (seulement si les données changent).
+1. python Taxi_PickupHour.py $\to$ crée le modèle .joblib (seulement si les données changent).
 2. python taxi_duree_prediction.py $\to$ vérifie qu'une prédiction marche.
 3. uvicorn api_prediction:app --port 8000 $\to$ vérifie l'API sans Docker.
 4. docker compose up --build $\to$ lance tout : backend, ml et frontend.
@@ -944,6 +944,6 @@ Dictionnaire de données
 | **Étape** | **Description** | **Outil responsable** | **Résultat** |
 | :---- | :---------- | :---------------: | :------: |
 | 1. ETL & Chargement | Nettoyer les données brutes et remplir la base de données. | extraction.py, load_taxi_data.py | frenchcab.db |
-| 2. Entraînement ML | Apprendre la corrélation entre les features et la durée réelle. | Taxi_PichkupHour.py | modele_duree_trajet.joblib |
+| 2. Entraînement ML | Apprendre la corrélation entre les features et la durée réelle. | Taxi_PickupHour.py | modele_duree_trajet.joblib |
 | 3. Exposer la prédiction | Créer un point d'accès API pour le service ML. | api_prediction.py (FastAPI) | GET /api/prediction/{uid_trajet} |
 | 4. Frontend | Interroger l'API pour afficher la durée prédite. | Angular / Browser | Affichage de la course prévue. |

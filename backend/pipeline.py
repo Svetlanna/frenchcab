@@ -90,7 +90,7 @@ def etape_entrainement(args) -> dict:
     """entraîne un NOUVEAU modèle et le range comme candidat"""
     DOSSIER_CANDIDAT.mkdir(parents=True, exist_ok=True)
     lancer_ou_echouer(
-        ["Taxi_PichkupHour.py", str(args.echantillon),
+        ["Taxi_PickupHour.py", str(args.echantillon),
          "--db", str(args.db), "--sortie", str(MODELE_CANDIDAT)],
         DOSSIER_ML, "entraînement en échec")
     return {"modele_candidat": str(MODELE_CANDIDAT.relative_to(BACKEND))}
