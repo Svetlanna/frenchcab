@@ -145,3 +145,91 @@ def course_par_id(uid_trajet: int) -> dict:
     if ligne is None:
         raise HTTPException(status_code=404, detail="Course non trouvée")
     return _ligne_en_dict(ligne)
+
+
+
+
+import json
+from pathlib import Path
+from fastapi import Body, HTTPException
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+CONFIG_MODELE = BACKEND_DIR / "config" / "modele_actif.json"
+DOSSIER_MODELES = BACKEND_DIR / "modeles"
+
+
+def trouver_modele(version: str) -> Path:
+    """Recherche un modèle à partir de sa version."""
+
+    if not version.startswith("v") or not version[1:].isdigit():
+        raise HTTPException(
+            status_code=400,
+            detail="Format de version invalide. Exemple : v1, v2, v3."
+        )
+
+    chemin = DOSSIER_MODELES / f"modele_{version}_duree_trajet.joblib"
+
+    if not chemin.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Modèle introuvable pour la version {version}."
+        )
+
+    return chemin
+
+
+@app.post("/modele/activer")
+def activer_modele(version: str = Body(..., embed=True)):
+    global modele, INFOS_MODELE
+
+    # 1. Rechercher le modèle demandé
+    chemin = trouver_modele(version)
+
+    # 2. Charger le modèle et ses métadonnées
+    try:
+        nouveau_modele = charger_modele(chemin)
+        nouvelles_infos = dict(lire_infos(chemin) or {})
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur de chargement du modèle : {e}"
+        )
+
+    # 3. Mettre à jour le fichier de configuration existant
+    nouvelle_config = {
+        "version": version,
+        "chemin_modele": chemin.relative_to(BACKEND_DIR).as_posix()
+    }
+
+    fichier_temp = CONFIG_MODELE.with_suffix(".tmp")
+
+    try:
+        CONFIG_MODELE.parent.mkdir(parents=True, exist_ok=True)
+
+        fichier_temp.write_text(
+            json.dumps(nouvelle_config, indent=2, ensure_ascii=False),
+            encoding="utf-8"
+        )
+
+        fichier_temp.replace(CONFIG_MODELE)
+
+    except OSError as e:
+        if fichier_temp.exists():
+            fichier_temp.unlink()
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur de mise à jour de la configuration : {e}"
+        )
+
+    # 4. Activer immédiatement le modèle en mémoire
+    modele = nouveau_modele
+    INFOS_MODELE = nouvelles_infos
+    INFOS_MODELE["version"] = version
+    INFOS_MODELE["fichier"] = chemin.name
+
+    return {
+        "message": "Modèle activé avec succès.",
+        "version": version,
+        "fichier": chemin.name
+    }
