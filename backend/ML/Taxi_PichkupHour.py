@@ -266,6 +266,12 @@ def main() -> None:
     p = argparse.ArgumentParser(description="modèle de durée de trajet")
     p.add_argument("--db", type=Path, default=DEFAULT_DB)
     p.add_argument("echantillon",nargs="?", type=int, default=1_000_000, help="nombre approximatif de courses à utiliser (0=toutes)")
+    # >>> NOUVEAU (1/3) : où enregistrer le modèle entraîné.
+    # Par défaut, le même fichier qu'avant (comportement inchangé).
+    # Le pipeline l'utilise pour écrire un modèle "candidat" SANS écraser
+    # le modèle en production.
+    p.add_argument("--sortie", type=Path, default=CHEMIN_MODELE,
+                   help="fichier .joblib à écrire (défaut : modèle en production)")
 
     a = p.parse_args()
     

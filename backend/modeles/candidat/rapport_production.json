@@ -1,0 +1,31 @@
+{
+  "date_evaluation": "2026-10-19T15:04:22",
+  "modele": {
+    "version": "c3cecda3ba02",
+    "empreinte_sha256": "c3cecda3ba02df5b985b690e7c35c36a49f2b63dbc1214d8b51f2b399a5134c2",
+    "fichier": "modele_duree_trajet.joblib",
+    "date_entrainement": "2026-10-13T13:16:35",
+    "date_entrainement_source": "date_fichier",
+    "mae_minutes": 3.921,
+    "mae_source": "evaluation",
+    "jeu_evaluation": "tlc_eval_2026-01.csv",
+    "date_evaluation": "2026-10-13T13:45:05",
+    "metadonnees_a_jour": true
+  },
+  "jeu_evaluation": {
+    "fichier": "tlc_eval_2026-01.csv",
+    "lignes_lues": 20000,
+    "lignes_evaluees": 18868,
+    "periode": [
+      "2026-01-01",
+      "2026-01-31"
+    ]
+  },
+  "metriques": {
+    "mae_minutes": 3.921,
+    "rmse_minutes": 7.174,
+    "r2": 0.7225,
+    "mae_baseline_mediane_minutes": 8.852,
+    "duree_reelle_moyenne_minutes": 17.078
+  }
+}
