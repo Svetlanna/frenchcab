@@ -462,3 +462,25 @@ Le pipeline :
 * effectue les 12 tests unitaires du pipeline
 * effectue une prédiction avec le modèle candidat pour comparaison avec le modèle en production
 * affiche dans la console et dans un fichier JSON le résumé de l'exécution du pipeline ainsi que la comparaison des 2 modèles
+
+
+### Comparaison entre la version actuelle du modéle et une version candidate `comparer_modeles.py`
+
+```bash
+cd backend/ML
+python comparer_modeles.py 
+
+```
+
+Le script compare automatiquement tous les modèles ```.joblib``` contenus dans le dossier backend/modeles.
+A l'exécution, il :
+
+* Évalue chaque modèle sur le même jeu de test.
+* Classe les modèles selon leur MAE.
+* Identifie les modèles conformes au seuil de qualité.
+* Active le meilleur modèle conforme dans config/modele_actif.json.
+* Conserve la configuration existante si aucun modèle n'est conforme.
+
+Le modéle actif se trouve dans backend/config/modele_actif.json. Le modèle actif correspond à la version qui est utilisée par frenchcab pour prédire ses courses.
+
+Pour changer de version, il suffit de changer le modéle dans ce fichier.

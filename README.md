@@ -58,15 +58,15 @@ Le projet est désormais organisé en 3 conteneurs principaux :
 
 1. Importer les images du dockerhub
 
-  ```bash
-  docker compose pull
-  ```
+        ```bash
+        docker compose pull
+        ```
 
 2. Lancer les conteneurs
 
-  ```bash
-  docker compose up
-  ```
+        ```bash
+        docker compose up
+        ```
 
 ### Lancement en VM
 
@@ -74,64 +74,59 @@ Pour lancer la VM groupe1@<url-serveur> et écrire le mot de passe.
 
 #### Lancer le Front-end
 
-Pour lancer le frontend, faire un push sur la branch dev, puis accéder à l'application à l'URL :
+Pour lancer le frontend, faire un push sur la branche dev, puis accéder à l'application à l'URL :
 [FrenchCab - Taxis Jaunes](https://g1.valentinduflot.fr/)
 
-## Informations sur les données
+## Données
 
-Dictionnaire de données (Yellow Cab Trip Data)
-Nom de champ	Description	Type
-VendorID	Code qui indique quel opérateur a fourni l'enregistrement de données.
-1 = Creative Mobile Technologies, LLC;
-2 = VeriFone Inc.	int
-tpep_pickup_datetime	Date et heure à la mise en route du compteur de course.	timestamp
-tpep_dropoff_datetime	Date et heure à l'arrêt du compteur de course.	timestamp
-passenger_count	Nombre de passagers dans le véhicule
-Cette donnée est fournit par le chauffeur.	int
-trip_distance	Distance parcourue, en miles (~1,609m), de la course relevée par le compteur.	float
-RateCodeID	Code du taux de tarification finale, en effet à la fin de la course.
-1=Taux standard
-2=Taux pour l'aéroport JFK
-3=Taux pour l'aéroport Newark
-4=Taux pour les littoraux de Nassau ou Westchester
-5=Tarif négocié
-6=Tarif de groupe	
-store_and_fwd_flag	Cet indicateur signale si l'enregistrement de la course a été stocké dans la mémoire du véhicule avant d'être transmis, en général par manque d'une connexion au serveur.
-1= store and forward trip
-0= not a store and forward trip	int
-PULocationID	La zone TLC Taxi dans laquelle le compteur de course a été déclenché.	int
-DOLocationID	La zone TLC Taxi dans laquelle le compteur de course a été arrêté.	int
-payment_type	Valeur entière qui correspond à un mode de paiement.
-1= Credit card
-2= Cash
-3= No charge
-4= Dispute - une opposition est faite auprès de la banque par le client
-5= Unknown
-6= Voided trip - la course est annulée et n'est pas chargée	int
-fare_amount	Le tarif calculé par le compteur de courses (temps et distance)	float
-extra	Charges et coûts supplémentaires. Actuellement, Cette colonne inclut la surcharge des heures de pointes ou des heures de nuit : 0,50$ ou 1$.	float
-mta_tax	Taxe MTA (réseau métropolitain) déclenchée automatiquement en fonction du RateCodeID utilisé	float
-tip_amount	Ce champ est peuplé automatiquement pour prendre en compte les pourboires CB	float
-tolls_amount	Montant total des péages pris en charge sur le trajet.	float
-improvement_surcharge	Depuis 2015, une surcharge d'amélioration de $0,30 participe à la mise en conformité et à l'amélioration des équipements pour les personnes à mobilité réduite. Elle est appliquée aux taxi Jaunes et Verts	float
-total_amount	Montant total de la course facturé au client. N'inclut pas les pourboires en espèce.	float
-congestion_surcharge	Montant total collecté lors d'un trajet depuis et vers l'état de New York en traversant Manhattan par le sud de la 96th rue.	float
+### Dictionnaires de données (Yellow Cab Trip Data)
 
+#### Les trajets
+
+| **Nom de champ** | **Description** | **Type** |
+| :--------------- | :-------------- | :------: |
+| VendorID | Code qui indique quel opérateur a fourni l'enregistrement de données. 1 = Creative Mobile Technologies, LLC; 2 = VeriFone Inc. | int |
+| tpep_pickup_datetime | Date et heure à la mise en route du compteur de course. | timestamp |
+| tpep_dropoff_datetime | Date et heure à l'arrêt du compteur de course. | timestamp |
+| passenger_count | Nombre de passagers dans le véhicule. Cette donnée est fournit par le chauffeur. | int |
+| trip_distance | Distance parcourue, en miles (~1,609m), de la course relevée par le compteur. | float |
+| RateCodeID | Code du taux de tarification finale, en effet à la fin de la course. 1=Taux standard, 2=Taux pour l'aéroport JFK, 3=Taux pour l'aéroport Newark, 4=Taux pour les littoraux de Nassau ou Westchester, 5=Tarif négocié, 6=Tarif de groupe | int |
+| store_and_fwd_flag | Cet indicateur signale si l'enregistrement de la course a été stocké dans la mémoire du véhicule avant d'être transmis, en général par manque d'une connexion au serveur. 1= store and forward trip, 0= not a store and forward trip | int |
+| PULocationID | La zone TLC Taxi dans laquelle le compteur de course a été déclenché. | int |
+| DOLocationID | La zone TLC Taxi dans laquelle le compteur de course a été arrêté. | int |
+payment_type | Valeur entière qui correspond à un mode de paiement. 1= Credit card, 2= Cash, 3= No charge, 4= Dispute - une opposition est faite auprès de la banque par le client, 5= Unknown, 6= Voided trip - la course est annulée et n'est pas chargée | int |
+| fare_amount | Le tarif calculé par le compteur de courses (temps et distance) | float |
+| extra | Charges et coûts supplémentaires. Actuellement, Cette colonne inclut la surcharge des heures de pointes ou des heures de nuit : 0,50$ ou 1$. | float |
+| mta_tax | Taxe MTA (réseau métropolitain) déclenchée automatiquement en fonction du RateCodeID utilisé | float |
+| tip_amount | Ce champ est peuplé automatiquement pour prendre en compte les pourboires CB | float |
+| tolls_amount | Montant total des péages pris en charge sur le trajet. | float |
+| improvement_surcharge | Depuis 2015, une surcharge d'amélioration de $0,30 participe à la mise en conformité et à l'amélioration des équipements pour les personnes à mobilité réduite. Elle est appliquée aux taxi Jaunes et Verts | float |
+| total_amount | Montant total de la course facturé au client. N'inclut pas les pourboires en espèce. | float |
+| congestion_surcharge | Montant total collecté lors d'un trajet depuis et vers l'état de New York en traversant Manhattan par le sud de la 96th rue. | float |
+
+#### Les localisations
 
 Données géographiques à croiser avec les points de départ et d'arrivée des trajets
-Nom du champ	Description	Type
-locationID	Identifiant de la zone	int
-borough	Quartier	str
-zone	zone du quartier	str
-service_zone	zone de service	str
 
+| **Nom du champ** | **Description** | **Type** |
+| :--------------- | :-------------- | :------: |
+| locationID | Identifiant de la zone | int |
+| borough | Quartier | str |
+| zone | zone du quartier | str |
+| service_zone | zone de service | str |
 
-Dictionnaire de termes 'métier'
-- TPEP - Taxicab Passenger Enhancement Program
-- MTA tax - Metropolitan Commuter Transportation Mobility Tax
-- Congestion surcharge : taxe de traversée d'unepartie spécifique de Manhattan
-💾 Flux de Données (ETL et ML)
-ETL (Extraction, Transformation, Loading)
+#### Les termes 'métier'
+
+* **TPEP :** Taxicab Passenger Enhancement Program - Programme unifiée d'amélioration de la prise en charge des clients et qui concerne l'ensemble des compagnies de Taxi de la ville de New York
+
+* **MTA tax :** Metropolitan Commuter Transportation Mobility Tax
+
+* **Congestion surcharge :** taxe de traversée d'une partie spécifique de Manhattan
+
+## Flux de Données (ETL et ML)
+
+### Extract, Transform, Load
+
 Le processus de préparation des données suit ces étapes :
 Fonctionnement de l'extraction
 1. Télécharger les données
@@ -257,7 +252,7 @@ jour de départ (0 = lundi, 6 = dimanche)
 
  lancer d'abord avec --nrows 100000 et relire le rapport    python backend/etl/extraction.py --nrows 100000
 
- ## Problématiques
+## Problématiques
 
 Incohérences entre colonnes et tables sql -> ajouter les quelques colonnes manquantes dans la table "trajets" et  s'assurer de la présence du champ `uid_trajet` qui est un identifiant unique auutoincrémenté et fait office de clé primaire.
 
@@ -265,7 +260,7 @@ Incohérences entre colonnes et tables sql -> ajouter les quelques colonnes manq
 
 Ce module prédit **combien de minutes va durer une course de taxi jaune** (New York, 2023), à partir des informations connues **au moment du départ** : la distance, l'heure, le jour et les zones de départ et d'arrivée
 
-```
+```text
 backend/
 ├── data/
 │   └── frenchcab.db                  ← base SQLite (tables trajets + localisations)
@@ -281,17 +276,16 @@ backend/
 
 Le chemin complet :
 
-```
-frenchcab.db ──► Taxi_PichkupHour.py ──► modele_duree_trajet.joblib
-                                               │
-                       taxi_duree_prediction.py.py ◄┘
-                                │
-                       api_prediction.py (FastAPI, port 8000)
-                                │
-                       Angular / navigateur : GET /api/prediction/13
-```
+```mermaid
+flowchart TB
+    n1["frenchcab.db"] --> n2["Taxi_PickupHour.py"]
+    n2 --> n3["modele_duree_trajet.joblib"]
+    n3 --> n4["taxi_duree_prediction.py"]
+    n4 --> n5["api_prediction.py (FastAPI, port 8000)"]
+    n5 --> n6["Angular / Navigateur<br>GET /api/prediction/13"]
 
----
+    n1@{ shape: rect}
+```
 
 ## 1. Le modèle — `Taxi_PichkupHour.py`
 
@@ -616,161 +610,6 @@ Le pipeline :
 * effectue une prédiction avec le modèle candidat pour comparaison avec le modèle en production
 * affiche dans la console et dans un fichier JSON le résumé de l'exécution du pipeline ainsi que la comparaison des 2 modèles
 
-
-
-
-
-
-
-16:34
-
-
-
-
-
-
-Durée d’exécution : 59s
-
-
-
-
-
-
-Je peux tout à fait m'occuper de cette restructuration. C'est un excellent moyen de s'assurer qu'un nouvel arrivant a une vision complète du projet sans perdre la richesse des détails techniques déjà écrits.
-Le challenge ici est de fusionner deux documents très denses sans que le lecteur ne se perde ou ne se dise qu'il a lu les mêmes informations deux fois. Je vais créer une structure hiérarchique qui va :
-1. Présenter la vue d'ensemble du projet.
-2. Décrire la structure du code.
-3. Expliquer le cycle de vie des données (de l'extraction à la prédiction).
-4. Détailler chaque module (Backend, ML, Frontend) dans un ordre logique.
-Voici la version unifiée et restructurée du README.md. J'ai conservé tous les blocs de texte, les tableaux, les codes et les schémas originaux.
-FrenchCab
-Bienvenue dans le projet FrenchCab. Cette application vise à modéliser et à prédire la durée des courses de taxi jaune de New York en exploitant des données historiques. Le système est composé de plusieurs microservices interdépendants : une Gateway pour les routes de l'API, un Backend pour la logique métier et l'ETL (Extraction, Transformation, Loading), et un module ML pour la prédiction de durée.
-Chaque utilisateur dispose d'une branche créée sur origin/dev/ :
-- yassine
-- svetlana
-- malick
-- thomas
-Ressources du projet :
-Trello
-🚀 Démarrage du projet
-Organisation et Docker
-Le projet a actuellement 3 conteneurs :
-Service	Image	Port	Rôle
-gateway	python:3.14-slim	3000	API Express (routes)
-backend	python:3.14-slim	3001	API FastAPI (prédiction)
-frontend	nginx	4200	Angular
-
-
-Installation
-1. Importer les images du DockerHub :docker compose pull
-2. Lancer les conteneurs :docker compose up
-Lancement du Front-end
-Pour lancer le frontend, il faut faire un push sur la branche dev, puis ouvrir sur internet https://g1.valentinduflot.fr/.
-Lancement Manuel (sans Docker)
-- Lancer le Backend (ML) :cd backend/ML
-  pip install fastapi uvicorn
-  uvicorn api_prediction:app --reload --port 8000
-Lancement Complet via Docker
-cd C:\python-projs\frenchcab
-docker compose up --build
-Puis ouvrir http://localhost:8000/api/prediction/13
-VM
-Pour lancer la VM groupe1@{numéro api} et écrire le mot de passe. Pour ces informations voir le fichier txt envoyé par le groupe précédent.
-📂 Structure du projet
-/projet-taxi-prototype
-├── .github/                # Configuration CI/CD
-│   └── workflows/
-│       └── ci.yml          # Pipeline de test et de build
-├── .gitignore
-├── compose.yml
-├── compose_override.yml
-├── .dockerignore
-├── README.md (général)
-
-Règles de contribution et installation
-
-├── gateway/
-│   │   └── Dockerfile
-│   ├── src/
-
-├── backend/
-│   │   └── Dockerfile
-│   ├── api/
-│   ├── db/                 # Code pour la connexion et les requêtes SQL
-│   └── ML/                 # Logique ML : ETL, entraînement, prédiction
-│       ├── Taxi_PichkupHour.py
-│       ├── modele_duree_trajet.joblib
-│       └── ...
-├── .env
-├── README.md (backend/ML)
-
-└── frontend/
-    └── web/                # Code Angular (Frontend)
-        /environement
-
-├── tests/                  # Tous les tests (Vitest/Jest)
-├── sql/
-📝 Contribution et Règles de Travail
-Contributing
-[Ensemble des règles de contribution du projet](./CONTRIBUTING.md)
-CI/CD
-Le ci.yml et le cd.yml sont dans le dossier workflows qui est dans le .github.
-MAJ groupe 2 : nous avons enlever les tests backend et et test de l'API car il appelait une route Hello! qui n'existe plus. De plus il avait besoin de modèle de prédiction, mais nous l'avons ajouté dans .gitignore
-💾 Données et Dictionnaires
-Informations sur les données (Schema)
-Nom de champ	Description	Type
-VendorID	Code qui indique quel opérateur a fournit l'enregistrement de données.
-1 = Creative Mobile Technologies, LLC;
-2 = VeriFone Inc.	int
-tpep_pickup_datetime	Date et heure à la mise en route du compteur de course.	timestamp
-tpep_dropoff_datetime	Date et heure à l'arrêt du compteur de course.	timestamp
-passenger_count	Nombre de passagers dans le véhicule
-Cette donnée est fournit par le chauffeur.	int
-trip_distance	Distance parcourue, en miles (~1,609m), de la course relevée par le compteur.	float
-RateCodeID	Code du taux de tarification finale, en effet à la fin de la course.
-1=Taux standard
-2=Taux pour l'aéroport JFK
-3=Taux pour l'aéroport Newark
-4=Taux pour les littoraux de Nassau ou Westchester
-5=Tarif négocié
-6=Tarif de groupe	
-store_and_fwd_flag	Cet indicateur signale si l'enregistrement de la course a été stocké dans la mémoire du véhicule avant d'être transmis, en général par manque d'une connexion au serveur.
-1= store and forward trip
-0= not a store and forward trip	int
-PULocationID	La zone TLC Taxi dans laquelle le compteur de course a été déclenché.	int
-DOLocationID	La zone TLC Taxi dans laquelle le compteur de course a été arrêté.	int
-payment_type	Valeur entière qui correspond à un mode de paiement.
-1= Credit card
-2= Cash
-3= No charge
-4= Dispute - une opposition est faite auprès de la banque par le client
-5= Unknown
-6= Voided trip - la course est annulée et n'est pas chargée	int
-fare_amount	Le tarif calculé par le compteur de courses (temps et distance)	float
-extra	Charges et coûts supplémentaires. Actuellement, Cette colonne inclut la surcharge des heures de pointes ou des heures de nuit : 0,50$ ou 1$.	float
-mta_tax	Taxe MTA (réseau métropolitain) déclenchée automatiquement en fonction du RateCodeID utilisé	float
-tip_amount	Ce champ est peuplé automatiquement pour prendre en compte les pourboires CB	float
-tolls_amount	Montant total des péages pris en charge sur le trajet.	float
-improvement_surcharge	Depuis 2015, une surcharge d'amélioration de $0,30 participe à la mise en conformité et à l'amélioration des équipements pour les personnes à mobilité réduite. Elle est appliquée aux taxi Jaunes et Verts	float
-total_amount	Montant total de la course facturé au client. N'inclut pas les pourboires en espèce.	float
-congestion_surcharge	Montant total collecté lors d'un trajet depuis et vers l'état de New York en traversant Manhattan par le sud de la 96th rue.	float
-
-
-Données géographiques à croiser avec les points de départ et d'arrivée des trajets
-Nom du champ	Description	Type
-locationID	Identifiant de la zone	int
-borough	Quartier	str
-zone	zone du quartier	str
-service_zone	zone de service	str
-
-
-Dictionnaire de termes 'métier'
-- TPEP - Taxicab Passenger Enhancement Program
-- MTA tax - Metropolitan Commuter Transportation Mobility Tax
-- Congestion surcharge : taxe de traversée d'unepartie spécifique de Manhattan
-⚙️ Workflow Backend & ETL
-Le traitement des données est une séquence d'étapes rigoureuses qui garantit la qualité des informations utilisées pour l'entraînement des modèles.
-ETL (Extraction, Transformation, Loading)
 Fonctionnement de l'extraction
 1. Télécharger les données
    Le fichier de données brutes téléchargées depuis le portail de données ouvertes de la ville de New York
@@ -1005,8 +844,11 @@ Service dans docker-compose.yml
       - ./backend/data:/app/data
     restart: always
 - ports "8000:8000" : le port 8000 du PC mène au port 8000 du conteneur.
-🔬 Gestion du Cycle de Vie du Modèle (MLOps)
+
+## Gestion du Cycle de Vie du Modèle (MLOps)
+
 Cette section détaille les outils de contrôle qualité et de mise à jour du modèle, garantissant que le modèle en production est toujours fiable et performant.
+
 1. Identification et Métadonnées
 Les informations sont stockées dans backend/modele_duree_trajet.meta.json, à côté du modèle, et exposées par l'API :
 - GET /modele (backend, port 3001)
@@ -1096,10 +938,12 @@ Utiliser connexion.js pour se connecter à la db. Pas d'identifiant ou mdp néce
 const dbPath = path.resolve(__dirname, 'frenchcab.db'); (Changer le nom selon votre bdd).
 Dictionnaire de données
 (Tableau et texte du dictionnaire de données de la racine)
-...
-Synthèse du Processus de Prédiction
-Étape	Description	Outil responsable	Output / Résultat
-1. ETL & Chargement	Nettoyer les données brutes et remplir la base de données.	extraction.py, load_taxi_data.py	frenchcab.db
-2. Entraînement ML	Apprendre la corrélation entre les features et la durée réelle.	Taxi_PichkupHour.py	modele_duree_trajet.joblib
-3. Exposer la prédiction	Créer un point d'accès API pour le service ML.	api_prediction.py (FastAPI)	GET /api/prediction/{uid_trajet}
-4. Frontend	Interroger l'API pour afficher la durée prédite.	Angular / Browser	Affichage de la course prévue.
+
+## Synthèse du processus de prédiction
+
+| **Étape** | **Description** | **Outil responsable** | **Résultat** |
+| :---- | :---------- | :---------------: | :------: |
+| 1. ETL & Chargement | Nettoyer les données brutes et remplir la base de données. | extraction.py, load_taxi_data.py | frenchcab.db |
+| 2. Entraînement ML | Apprendre la corrélation entre les features et la durée réelle. | Taxi_PichkupHour.py | modele_duree_trajet.joblib |
+| 3. Exposer la prédiction | Créer un point d'accès API pour le service ML. | api_prediction.py (FastAPI) | GET /api/prediction/{uid_trajet} |
+| 4. Frontend | Interroger l'API pour afficher la durée prédite. | Angular / Browser | Affichage de la course prévue. |

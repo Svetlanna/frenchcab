@@ -1,8 +1,7 @@
 {
-  "empreinte": "c3cecda3ba02df5b985b690e7c35c36a49f2b63dbc1214d8b51f2b399a5134c2",
-  "date_entrainement": "2026-10-13T13:16:35",
-  "date_entrainement_source": "date_fichier",
-  "mae_evaluation_minutes": 3.921,
-  "jeu_evaluation": "tlc_eval_2026-01.csv",
-  "date_evaluation": "2026-10-13T13:45:05"
+  "empreinte": "f6c510a1743a2798547a1479027bfa93f5705d8106db528aa96eb9937909378a",
+  "date_entrainement": "2026-10-19T20:28:43",
+  "date_entrainement_source": "entrainement",
+  "mae_test_minutes": 3.009,
+  "lignes_entrainement": 798655
 }

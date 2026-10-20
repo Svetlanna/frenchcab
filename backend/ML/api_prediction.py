@@ -1,12 +1,19 @@
+import json
+from pathlib import Path
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 
-from Taxi_PichkupHour import CHEMIN_MODELE, DEFAULT_DB, TABLE_ZONES, TABLE_TRAJETS
+#from Taxi_PichkupHour import CHEMIN_MODELE, DEFAULT_DB, TABLE_ZONES, TABLE_TRAJETS
+from Taxi_PichkupHour import DEFAULT_DB, TABLE_ZONES, TABLE_TRAJETS
 from taxi_duree_prediction import construire_course_prediction, charger_modele, predire
 from modele_info import lire_infos
 from datetime import date, time
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+CONFIG_MODELE = BACKEND_DIR / "config" / "modele_actif.json"
+
 
 app = FastAPI(title="FrenchCab - prédiction durée")
 
@@ -14,11 +21,46 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:4200"],
                    allow_methods=["GET"], allow_headers=["*"])
 
 # le modèle est chargé UNE seule fois, au démarrage
-modele = charger_modele(CHEMIN_MODELE)
+#modele = charger_modele(CHEMIN_MODELE)
 
 # identification du modèle réellement chargé (version = empreinte du fichier .joblib)
-INFOS_MODELE = lire_infos(CHEMIN_MODELE)
+#INFOS_MODELE = lire_infos(CHEMIN_MODELE)
 
+
+def charger_modele_actif():
+    """Charge le modèle choisi dans modele_actif.json."""
+
+    if not CONFIG_MODELE.is_file():
+        raise RuntimeError(f"Configuration introuvable : {CONFIG_MODELE}")
+
+    with CONFIG_MODELE.open("r", encoding="utf-8") as fichier:
+        config = json.load(fichier)
+
+    version = config.get("version")
+    chemin = config.get("chemin_modele")
+
+    if not version or not chemin:
+        raise RuntimeError("Configuration du modèle invalide.")
+
+    chemin_modele = (BACKEND_DIR / chemin).resolve()
+
+    if not chemin_modele.is_relative_to(BACKEND_DIR.resolve()):
+        raise RuntimeError("Le chemin du modèle est invalide.")
+
+    if not chemin_modele.is_file():
+        raise RuntimeError(f"Modèle introuvable : {chemin_modele}")
+
+    modele_charge = charger_modele(chemin_modele)
+    infos = dict(lire_infos(chemin_modele) or {})
+
+    infos["version"] = version
+    infos["fichier"] = chemin_modele.name
+
+    return modele_charge, infos
+
+
+# Chargement au démarrage de l'API
+modele, INFOS_MODELE = charger_modele_actif()
 
 @app.get("/modele")
 def informations_modele() -> dict:
