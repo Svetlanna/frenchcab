@@ -13,3 +13,4 @@ backend/ML/modeles/*
 *.joblib
 backend/ML/rapport_evaluation.json
 backend/.venv/**
+.venv
