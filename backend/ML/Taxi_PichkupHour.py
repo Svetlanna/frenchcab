@@ -35,7 +35,7 @@ import mlflow.sklearn
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "data" / "frenchcab.db"
-CHEMIN_MODELE = BASE_DIR  /"modeles"/ "modele_v2_duree_trajet.joblib"
+CHEMIN_MODELE = BASE_DIR  /"modeles"/ "modele_v3_duree_trajet.joblib"
 
 TABLE_ZONES = "localisations"
 TABLE_TRAJETS = "trajets"
@@ -277,7 +277,7 @@ def main() -> None:
     
     # Configuration MLflow
     mlflow.set_tracking_uri("http://localhost:5000")
-    mlflow.set_experiment("FrenchCab - prediction duree v2")
+    mlflow.set_experiment("FrenchCab - prediction duree v3")
     
     t0 = time.time()
 

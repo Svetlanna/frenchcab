@@ -1,5 +1,5 @@
 {
-  "debut": "2026-10-19T15:03:19",
+  "debut": "2026-10-21T11:16:47",
   "etapes_demandees": [
     "verification",
     "entrainement",
@@ -11,56 +11,11 @@
   "etapes": [
     {
       "nom": "verification",
-      "details": {},
-      "statut": "OK",
+      "statut": "ECHEC",
+      "message": "fichiers introuvables ->",
       "duree_s": 0.0
-    },
-    {
-      "nom": "entrainement",
-      "details": {
-        "modele_candidat": "modeles\\candidat\\modele_duree_trajet.joblib"
-      },
-      "statut": "OK",
-      "duree_s": 52.8
-    },
-    {
-      "nom": "evaluation",
-      "details": {
-        "candidat": {
-          "version": "7fdbc1bc8e8b",
-          "mae_minutes": 3.916
-        },
-        "production": {
-          "version": "c3cecda3ba02",
-          "mae_minutes": 3.921
-        },
-        "jeu_evaluation": "tlc_eval_2026-01.csv"
-      },
-      "statut": "OK",
-      "duree_s": 10.5
-    },
-    {
-      "nom": "controle",
-      "details": {
-        "seuil_mae_minutes": 5.0,
-        "admissible": true
-      },
-      "statut": "OK",
-      "duree_s": 0.1
-    },
-    {
-      "nom": "tests",
-      "details": {},
-      "statut": "OK",
-      "duree_s": 6.1
-    },
-    {
-      "nom": "prediction",
-      "details": {},
-      "statut": "OK",
-      "duree_s": 9.7
     }
   ],
-  "resultat": "SUCCES : le candidat est prêt (non activé)",
-  "fin": "2026-10-19T15:04:39"
+  "resultat": "ERREUR TECHNIQUE : voir l'étape en échec",
+  "fin": "2026-10-21T11:16:47"
 }
