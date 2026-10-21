@@ -276,8 +276,8 @@ def main() -> None:
     a = p.parse_args()
     
     # Configuration MLflow
-    mlflow.set_tracking_uri("http://localhost:5000")
-    mlflow.set_experiment("FrenchCab - prediction duree v2")
+    mlflow.set_tracking_uri("http://conteneur-mlflow:5000")
+    mlflow.set_experiment("FrenchCab - prediction duree v3")
     
     t0 = time.time()
 
