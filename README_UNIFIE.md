@@ -10,26 +10,20 @@
 - [Architecture et Docker](#architecture-et-docker)
 - [Données et dictionnaire métier](#données-et-dictionnaire-métier)
 - [ETL et préparation des données](#etl-et-préparation-des-données)
-- [Base SQLite et backend Node.js](#base-sqlite-et-backend-nodejs)
 - [Modèle de prédiction](#modèle-de-prédiction)
-- [API FastAPI](#api-fastapi)
 - [Évaluation, contrôle qualité et MLOps](#évaluation-contrôle-qualité-et-mlops)
 - [Service MLflow](#service-mlflow)
 - [Frontend Angular](#frontend-angular)
 - [CI/CD et tests](#cicd-et-tests)
+- [Routes Gateway & Backend](#routes-gateway-et-backend)
 - [Points à vérifier avant intégration](#points-à-vérifier-avant-intégration)
 
 ## Présentation et ressources
 
-Frenchcab est un projet autour des données de courses de taxis jaunes de New York. Le traitement des données, la base SQLite, les services backend, l'API de prédiction et l'interface Angular permettent d'explorer les courses et de prédire leur durée.
-
-Chaque utilisateur dispose d'une branche créée sur `origin/dev/` :
-- yassine
-- svetlana
-- malick
-- thomas
+Frenchcab est un projet autour des données de courses de taxis jaunes de New York. Le traitement des données, la base SQLite, les services backend, l'API de prédiction et l'interface Angular permettent d'explorer les courses et de prédire leur durée afin d'yappuyer un service de réservation de courses.
 
 Ressources du projet :
+
 - [Trello](https://trello.com/b/6aba1ba41df9f2136e0e2c48)
 - [Dépôt GitHub](https://github.com/tomtoomuch/frenchcab)
 - [Règles de contribution](./CONTRIBUTING.md)
@@ -39,24 +33,28 @@ Ressources du projet :
 Arborescence indicative rassemblant les composants documentés dans les README. Elle ne remplace pas la vérification de l'arborescence effective du dépôt.
 
 ```text
-/projet-taxi-prototype
+/frenchcab
 ├── .github/
 │   └── workflows/           # Configuration CI/CD
 ├── .gitignore
 ├── .dockerignore
-├── compose.yml
-├── compose_override.yml
+├── docker-compose.yml
+├── docker-compose_override.yml
 ├── gateway/                 # Gateway et routes d'exposition
 ├── backend/
-│   ├── api/                 # Code API
-│   ├── db/                  # Connexion et requêtes SQL
+│   ├── config/              # Configuration du modèle à utiliser pour les prédictions
+│   ├── api/                 # Exposition des fonctionnalités via des routes FastAPI
+│   ├── eval/                # Données d'évaluation des modèles
 │   ├── etl/                 # Extraction et chargement des données
 │   ├── ML/                  # Entraînement, prédiction et API FastAPI
-│   └── data/                # CSV, base SQLite et données nettoyées
+│   ├── modeles/             # Dossier contenant les modèles en production et candidats
+│   ├── data/                # Données brutes et nettoyées
+│   └── pipeline.py          # Exécute l'ensemble du pipeline de procution du modèle
 ├── frontend/                # Application Angular
 ├── mlflow/                  # Service MLflow autonome
-├── tests/                   # Tests
-└── sql/                     # Fichiers SQL
+│   ├── mlflow.db
+│   └── artifacts
+└── tests/                   # Tests
 ```
 
 ## Contribution et démarrage
@@ -102,7 +100,7 @@ docker compose up -d --build mlflow
 
 ### VM et frontend distant
 
-Pour lancer la VM, utiliser `groupe1@{numéro api}` et saisir le mot de passe. Pour ces informations, consulter le fichier texte envoyé par le groupe précédent.
+Pour lancer la VM, utiliser `groupe1@<url_vm_groupe1>` et saisir le mot de passe. Pour ces informations, consulter le fichier texte envoyé par le groupe précédent.
 
 Pour lancer le frontend distant, faire un push sur la branche `dev`, puis ouvrir :
 [https://g1.valentinduflot.fr/](https://g1.valentinduflot.fr/).
@@ -111,37 +109,29 @@ Pour lancer le frontend distant, faire un push sur la branche `dev`, puis ouvrir
 
 Les README décrivent plusieurs vues de l'architecture. Les tableaux ci-dessous sont conservés séparément, car les noms de services et les ports ne sont pas identiques dans les sources.
 
-### Tableau d'architecture du README général
+### Tableau d'architecture
 
 | Service | Image indiquée | Port | Rôle indiqué |
-|---|---|---:|---|
-| `gateway` | `python:3.14-slim` | 3000 | API Express (routes) |
-| `backend` | `python:3.14-slim` | 3001 | API FastAPI (prédiction) |
+| ------- | -------------- | ---: | ------------ |
+| `gateway` | `node:latest` | 3000 | API NodeJS / Express (routes) |
+| `backend` | `python:3.14-slim` | 3001 | API FastAPI (ETL et ML) |
+| `ml` | `python:3.14-slim` | - | Volume uniquement /ML dans app/ |
 | `frontend` | `nginx` | 4200 | Angular |
-
-### Tableau d'architecture du README ML
-
-| Service | Image indiquée | Port | Rôle indiqué |
-|---|---|---:|---|
-| `backend` | `node:22` | 3001 | API Express (liste des courses) |
-| `ml` | `python:3.14-slim` | 8000 | API FastAPI (prédiction) |
-| `frontend` | `nginx` | 4200 | Angular |
-
-> Le service `backend` est une image **Node** : elle ne contient pas Python. C'est pour cela que la prédiction a besoin de son propre conteneur, `ml`.
+| `mlflow` | `mlflow:v3.5.0` | 5000 | API FastAPI (mlops) |
 
 ### Service MLflow
 
 MLflow fonctionne dans un conteneur Docker indépendant du backend applicatif.
 
 | Paramètre | Valeur documentée |
-|---|---|
+| --- | --- |
 | Port | 5000 |
 | Base de données | SQLite |
 | Stockage des artefacts | `/mlflow/artifacts` |
 | Persistance | Volume Docker |
 
 - Interface web : [http://localhost:5000](http://localhost:5000)
-- Adresse depuis un autre conteneur du même réseau Docker Compose : `http://mlflow:5000`
+- Adresse depuis un autre conteneur du même réseau Docker Compose : `http://conteneur-mlflow:5000`
 
 ## Données et dictionnaire métier
 
@@ -149,16 +139,12 @@ MLflow fonctionne dans un conteneur Docker indépendant du backend applicatif.
 
 Les données brutes sont téléchargées depuis le [portail de données ouvertes de la ville de New York — 2023 Yellow Taxi Trip Data](https://data.cityofnewyork.us/Transportation/2023-Yellow-Taxi-Trip-Data/4b4i-vvec/about_data).
 
-Les données sont ensuite importées dans deux CSV :
-- `query.csv`
-- `taxi_zone_lookup.csv`
-
-Le fichier de courses est référencé à l'emplacement `backend/data/query.csv`.
+Les fichiers de jeux de données, `query.csv` et `taxi_zone_lookup.csv` sont ensuite lues par les scripts de nettoyage puis stockées dans en fichiers CSV ou DB.
 
 ### Dictionnaire de données des courses
 
 | Nom de champ | Description | Type indiqué |
-|---|---|---|
+| --- | --- | --- |
 | `VendorID` | Code qui indique quel opérateur a fourni l'enregistrement : 1 = Creative Mobile Technologies, LLC ; 2 = VeriFone Inc. | int |
 | `tpep_pickup_datetime` | Date et heure à la mise en route du compteur de course. | timestamp |
 | `tpep_dropoff_datetime` | Date et heure à l'arrêt du compteur de course. | timestamp |
@@ -183,7 +169,7 @@ Le fichier de courses est référencé à l'emplacement `backend/data/query.csv`
 Les données géographiques sont à croiser avec les points de départ et d'arrivée des trajets.
 
 | Nom du champ | Description | Type |
-|---|---|---|
+| --- | --- | --- |
 | `locationID` | Identifiant de la zone | int |
 | `borough` | Quartier | str |
 | `zone` | Zone du quartier | str |
@@ -197,9 +183,19 @@ Les données géographiques sont à croiser avec les points de départ et d'arri
 
 ## ETL et préparation des données
 
+Depuis la dernière version de notre application, l'ensemble des opérations est effectué depuis un fichier unique :
+
+ ```bash
+ python backend/pipeline.py
+ ```
+
+Ce dernier inclut les phases d'ETL, puis les phases d'entraînement, de tests, dévaluation et de validation du modèle de prédiction utilisé dans l'application pour prédire les temps de courses.
+
+VOus pouvez toutefois, lancer chaque étape à la main en utilisant les scripts de manière individuelle.
+
 Le flux ETL extrait les données de courses, les normalise, filtre les lignes aberrantes, produit un rapport et prépare les données pour le chargement dans SQLite.
 
-### 1. Extraction — `backend/etl/extraction.py`
+### Extraction — `backend/etl/extraction.py`
 
 Le script accepte notamment l'option `--nrows`, utile pour tester le traitement sur un échantillon avant d'exécuter le traitement complet :
 
@@ -218,7 +214,7 @@ python backend/etl/extraction.py --nrows 100000
 3. Le script filtre ; les lignes aberrantes sont comptées puis retirées.
 4. Le script écrit le résultat : une première écriture crée le fichier avec les en-têtes de colonnes, puis chaque enregistrement s'ajoute à la suite.
 
-### 2. Règles de nettoyage
+### Règles de nettoyage
 
 1. **`date_invalide`**
    - Date de départ ou d'arrivée illisible.
@@ -253,27 +249,43 @@ python backend/etl/extraction.py --nrows 100000
     - Est considérée comme doublon une ligne identique à une autre dans l'échantillon de données traité.
 
 Deux valeurs sont vidées sans supprimer la course ; elles deviennent « inconnu » (case vide) :
+
 - `passenger_count = 0`
 - `RatecodeID = 99`
 
-### 3. Fichiers produits
+### Fichiers produits
 
 Les fichiers sont écrits dans `backend/data/clean/` :
 
 - `yellow_tripdata_2023.csv` : courses propres, 23 colonnes (les 19 du dictionnaire + 4 ajoutées). Le fichier peut peser plusieurs Go ; vérifier l'espace disque.
-- `rapport_extraction_2023.json` : lignes lues, gardées, rejetées, taux de rejet et détail par motif.
+- `rapport_2023.json` : lignes lues, gardées, rejetées, taux de rejet et détail par motif.
 
-### 4. Colonnes ajoutées
+### Colonnes ajoutées
 
 - **`cbd_congestion_fee`** : 0 pour 2023 (taxe créée le 5 janvier 2025), gardée pour un schéma identique d'une année à l'autre.
 - **`trip_duration_min`** : durée de la course en minutes.
 - **`pickup_hour`** : heure de départ (0–23).
 - **`pickup_weekday`** : jour de départ (0 = lundi, 6 = dimanche).
 
-### 5. Limites et remarques sur les données
+```bash
+python backend/etl/extraction.py --nrows 100000
+cat backendd/data.clean/rapport_2023.json
+```
+
+### Initialiser la base et charger les données
+
+Depuis le dossier `backend/etl` :
+
+```bash
+python load_taxi_data.py
+```
+
+Le script `load_taxi_data.py` initialise la base de données `frenchcab.db` dans le dossier `data` et y charge les données.
+
+### Limites et remarques sur les données
 
 - **Remboursements** — une annulation apparaît en deux lignes, une négative et une positive. La négative est retirée, la positive reste : la course compte donc une fois alors qu'elle a été remboursée.
-- **Doublons** — ils ne sont détectés qu'à l'intérieur d'un même morceau ; deux lignes identiques dans deux morceaux différents ne sont pas repérées.
+- **Doublons** — ils ne sont détectés qu'à l'intérieur d'un même échantillon ; deux lignes identiques dans deux morceaux différents ne sont pas repérées.
 - **Frais d'aéroport, VendorID 1** — pour les courses à l'aéroport, `extra` semble déjà contenir les 1,25 $ de `airport_fee`. La somme des colonnes dépasse alors `total_amount` de 1,25 $ ; se fier à `total_amount`.
 - **Pourboires en espèces** — ils ne sont pas enregistrés ; `tip_amount` ne concerne que les paiements par carte.
 - **`improvement_surcharge`** — quelques lignes sont à 0,30 $ au lieu de 1,00 $ (ancien tarif) ; elles sont gardées.
@@ -281,68 +293,9 @@ Les fichiers sont écrits dans `backend/data/clean/` :
 
 Il est recommandé de lancer d'abord le script avec `--nrows 100000` et de relire le rapport :
 
-```bash
-python backend/etl/extraction.py --nrows 100000
-```
-
-### 6. Initialiser la base et charger les données
-
-Une fois les données importées et traitées en CSV, créer une base vide `frenchcab.db` dans `backend/data`, puis exécuter les scripts d'extraction et de chargement.
-
-Depuis le dossier `backend/etl` :
-
-```powershell
-cd backend/etl
-python extraction.py
-python load_taxi_data.py
-```
-
-Le script `load_taxi_data.py` initialise la base de données `frenchcab.db` et charge les données dans le dossier `data`.
-
-### Problématiques SQL recensées
-
-Des incohérences entre colonnes et tables SQL ont été relevées : ajouter les quelques colonnes manquantes dans la table `trajets` et s'assurer de la présence du champ `uid_trajet`, identifiant unique auto-incrémenté faisant office de clé primaire.
-
-## Base SQLite et backend Node.js
-
-### Connexion à la base
-
-Le fichier `connexion.js` permet de se connecter à la base. Il n'y a pas d'identifiant ni de mot de passe à fournir pour se connecter à SQLite.
-
-Extrait documenté :
-
-```javascript
-// Cible le dossier 'data' puis le fichier 'french.db' depuis l'emplacement de ce fichier
-const dbPath = path.resolve(__dirname, 'frenchcab.db');
-```
-
-Le commentaire de la source indique de changer le nom selon la base utilisée.
-
-### Routes Node.js
-
-- `GET http://localhost:3001/api/courses` : toutes les courses. La pagination est limitée à 100 premières courses, car un volume plus important provoquait un crash.
-- `GET http://localhost:3001/api/courseID?id=1` : course par identifiant.
-
-Exemple de sortie de conteneur documentée :
-
-```text
-conteneur-back | App connecté sur le port 3001
-conteneur-back | Connexion réussie à la base SQLite (frenchcab.db) !
-conteneur-back | Erreur SQL : null
-conteneur-back | Nombre de courses : 100
-```
-
-### Gateway
-
-La gateway expose notamment une route de prédiction du backend FastAPI documentée comme :
-
-`GET http://localhost:3001/api/prediction`
-
-Les routes qui interrogent directement la base exposent également les courses, avec une pagination à 100 premières courses.
-
 ## Modèle de prédiction
 
-Ce module prédit **combien de minutes va durer une course de taxi jaune** (New York, 2023), à partir des informations connues au moment du départ : la distance, l'heure, le jour et les zones de départ et d'arrivée.
+Ce module prédit **combien de minutes va durer une course de taxi jaune** (New York, 2023), à partir des informations connues au moment du départ : l'heure, le jour et les zones de départ et d'arrivée.
 
 ### Fichiers du module
 
@@ -350,41 +303,46 @@ Ce module prédit **combien de minutes va durer une course de taxi jaune** (New 
 backend/
 ├── data/
 │   └── frenchcab.db
-└── ML/
-    ├── Taxi_PichkupHour.py
-    ├── modele_duree_trajet.joblib
-    ├── taxi_duree_prediction.py.py
-    ├── api_prediction.py
-    ├── requirements.txt
-    ├── Dockerfile
-    └── .dockerignore
+├── ML/
+│   ├── Taxi_PickupHour.py
+│   ├── modele_duree_trajet.joblib
+│   ├── taxi_duree_prediction.py.py
+│   ├── api_prediction.py
+│   ├── requirements.txt
+├── Dockerfile
+└── .dockerignore
 ```
 
 Le flux est le suivant :
 
-```text
-frenchcab.db ──► Taxi_PichkupHour.py ──► modele_duree_trajet.joblib
-                                               │
-                       taxi_duree_prediction.py.py ◄┘
-                                │
-                       api_prediction.py (FastAPI, port 8000)
-                                │
-                       Angular / navigateur : GET /api/prediction/13
+```mermaid
+---
+config
+   layout:elk
+---
+flowchart TB
+    n1["frenchcab.db"] --> n2["Taxi_PickupHour.py"]
+    n2 --> n3["modele_duree_trajet.joblib"]
+    n3 --> n4["taxi_duree_prediction.py"]
+    n4 --> n5["api_prediction.py (FastAPI, port 8000)"]
+    n5 --> n6["Angular / Navigateur<br>GET /api/prediction/13"]
+
+    n1@{ shape: rect}
 ```
 
-### 1. Entraînement — `Taxi_PichkupHour.py`
+### Entraînement — `Taxi_PickupHour.py`
 
 Une fonction : **informations de la course → durée en minutes**.
 
 C'est de l'**apprentissage supervisé** : le modèle apprend à partir de courses passées dont on connaît la vraie durée. Comme la réponse est un nombre, c'est une **régression**.
 
-- **X** (variables ou *features*) : ce qu'on donne au modèle.
+- **X** (variables ou **features**) : ce qu'on donne au modèle.
 - **y** (cible) : `trip_duration_min`, déjà calculée par l'ETL (`load_taxi_data.py`).
 
 #### Étapes du pipeline d'entraînement
 
 | Étape | Fonction | Description |
-|---|---|---|
+| --- | --- | --- |
 | 1. Charger | `charger_donnees()` | Chargement des données |
 | 2. Nettoyer | `nettoyer()` | Nettoyage |
 | 3. Variables | `construire_variables()` | Crée `heure` et `est_weekend`, ainsi que la paire de zones `trajet_zones` (ex. `"zone_names"`) |
@@ -397,7 +355,7 @@ C'est de l'**apprentissage supervisé** : le modèle apprend à partir de course
 #### Variables utilisées
 
 | Type | Variables | Traitement |
-|---|---|---|
+| --- | --- | --- d|
 | Nombres | `trip_distance`, `heure`, `pickup_weekday`, `est_weekend`, `mois` | Utilisées telles quelles |
 | Peu de catégories | `quartier_dep/arr`, `zone_service_dep/arr`, `RateCodeID`, `vendorID` | **OneHotEncoder** : une colonne 0/1 par valeur |
 | Beaucoup de catégories | `pu_locationID`, `do_locationID`, `trajet_zones` | **TargetEncoder** : chaque zone est remplacée par la durée moyenne de ses courses |
@@ -421,9 +379,9 @@ Le **Pipeline** regroupe la préparation des données et le modèle dans un seul
 
 ```bash
 cd backend/ML
-python Taxi_PichkupHour.py                  # avec la distance (1 million de courses)
-python Taxi_PichkupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
-python Taxi_PichkupHour.py --sans-distance  # seulement les zones et l'heure
+python Taxi_PickupHour.py                  # avec la distance (1 million de courses)
+python Taxi_PickupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
+python Taxi_PickupHour.py --sans-distance  # seulement les zones et l'heure
 ```
 
 ### 2. Prédiction — `taxi_duree_prediction.py`
@@ -431,7 +389,7 @@ python Taxi_PichkupHour.py --sans-distance  # seulement les zones et l'heure
 Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien.
 
 | Fonction | Rôle |
-|---|---|
+| --- | --- |
 | `charger_modele()` | Ouvre `modele_duree_trajet.joblib` |
 | `constuire_course_prediction(db, zone_depart, zone_arrivee, date_depart, heure_depart)` | `SELECT ... FROM trajets WHERE zone IN (...)`, puis la jointure avec `localisations` |
 | `predire(modele, df)` | Applique `construire_variables()` (la même fonction qu'à l'entraînement), puis `modele.predict()` |
@@ -440,9 +398,9 @@ Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien.
 
 Points importants :
 
-- Les constantes et `construire_variables` sont importées depuis `Taxi_PichkupHour.py`. Ainsi, l'entraînement et la prédiction préparent les données exactement de la même façon.
+- Les constantes et `construire_variables` sont importées depuis `Taxi_PickupHour.py`. Ainsi, l'entraînement et la prédiction préparent les données exactement de la même façon.
 - `modele.feature_names_in_` donne la liste des colonnes vues pendant l'entraînement ; on donne au modèle exactement ces colonnes, dans le même ordre.
-- Le `if __name__ == "__main__":` de `Taxi_PichkupHour.py` empêche l'entraînement de se relancer quand on importe ce fichier.
+- Le `if __name__ == "__main__":` de `Taxi_PickupHour.py` empêche l'entraînement de se relancer quand on importe ce fichier.
 
 Lancer la prédiction :
 
@@ -451,7 +409,7 @@ cd backend/ML
 python taxi_duree_prediction.py
 ```
 
-La documentation source donne l'exemple de résultat suivant :
+Exemple de résultat :
 
 ```text
 Course prévue le 2027-03-15 à 10:00 de Bronx/Allerton/Pelham Gardens/Boro Zone vers Manhattan/Battery Park City/Yellow Zone - durée prédite : 48 min
@@ -459,17 +417,18 @@ Course prévue le 2027-03-15 à 10:00 de Bronx/Allerton/Pelham Gardens/Boro Zone
 
 > Remarque : si la course a servi à l'entraînement, le modèle l'a déjà « vue ». La prédiction sera donc un peu trop bonne.
 
-## API FastAPI
+### Routes FastAPI et Backend
 
-Angular tourne dans le navigateur, qui ne peut pas lancer un fichier Python. Il envoie des requêtes HTTP. FastAPI transforme donc la prédiction en adresse web.
 
-### Route de prédiction
+
+- `GET http://localhost:3001/api/courses` : toutes les courses. La pagination est limitée aux 100 premières courses, car un volume plus important provoque un crash.
+- `GET http://localhost:3001/api/courseID?id=1` : course par identifiant.
 
 ```text
 GET /api/prediction/{uid_trajet}
 ```
 
-Documentation interactive : [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+Documentation interactive : [http://localhost:8000/docs](http://localhost:8000/docs).
 
 La documentation décrit également `@app.get("/api/prediction")` comme attendant les paramètres `zone_depart: str`, `zone_arrivee: str`, `date_depart: date` et `heure_depart: time`.
 
@@ -591,7 +550,7 @@ Le seuil (5,0 min) et sa justification sont dans `seuil_qualite.json` : environ 
 ### Après un réentraînement
 
 ```bash
-python Taxi_PichkupHour.py 200000
+python Taxi_PickupHour.py 200000
 python evaluation_modele.py --maj-metadonnees
 curl http://localhost:3001/modele
 ```
@@ -744,14 +703,42 @@ Une note de mise à jour du groupe 2 indique que les tests backend et les tests 
 
 La documentation du pipeline ML indique pour sa part que le workflow `.github/workflows/ci-cd.yml` exécute les contrôles de qualité du modèle, construit et publie les images Docker Hub, puis déploie sur la VM. Si le contrôle de qualité échoue, la construction et le déploiement ne sont pas exécutés.
 
+## Routes Gateway et Backend
+
+### Routes exposées sur la passerelle
+
+Celles-ci sont interrogées par le frontend Angular et retransmettent les requêtes au backend Python qui exposent les fonctionnalités grâce à FastAPI
+
+| **Route** | **Fonctionnalité** |
+| ----- | -------------- |
+| GET `http://localhost:3000/course/` | Route de vérification de la santé du service d'exposition des courses |
+| GET `http://localhost:3000/course/courses` | Route qui récupère l'ensemble des courses (100 premières) |
+| GET `http://localhost:3000/course/courseID` | Route qui récupère une course grâce à son identifiant |
+| GET `http://localhost:3000/prediction/` | Route de vérification de la santé du service d'exposition des prédictions |
+| GET `http://localhost:3000/prediction/zones` | Route qui récupère |
+| GET `http://localhost:3000/prediction/modele` | Route qui expose le modèle de prédiction |
+
+Les routes qui interrogent directement la base exposent également les courses, avec une pagination à 100 premières courses.
+
+- `GET http://localhost:3001/api/courses` : toutes les courses. La pagination est limitée aux 100 premières courses, car un volume plus important provoque un crash.
+- `GET http://localhost:3001/api/courseID?id=1` : course par identifiant.
+
+
+
+
+
+
+
+
+
 ## Points à vérifier avant intégration
 
 Les informations suivantes divergent entre les README sources. Elles sont listées ici pour revue et ne sont pas corrigées par hypothèse dans cette fusion.
 
-1. **Architecture Docker** — le README général décrit `gateway` sur le port 3000 et `backend` sur le port 3001 avec des images Python ; le README ML décrit `backend` en Node sur le port 3001 et `ml` en Python sur le port 8000. Le service MLflow ajoute le port 5000.
+
 2. **Route de prédiction** — une section documente `GET http://localhost:3001/api/prediction` pour la gateway, tandis que FastAPI est documenté sur le port 8000 avec `GET /api/prediction/{uid_trajet}`. Vérifier les routes réellement exposées par chaque service.
 3. **Fichiers de workflow** — les noms `ci.yml`, `cd.yml` et `ci-cd.yml` sont tous mentionnés. Vérifier les fichiers présents dans `.github/workflows`.
-4. **Noms de scripts** — les sources emploient les variantes `Taxi_PickupHour.py`, `Taxi_PichkupHour.py`, `taxi_duree_prediction.py` et `taxi_duree_prediction.py.py`. Vérifier les noms effectifs avant de copier les commandes.
+4. **Noms de scripts** — les sources emploient les variantes `Taxi_PickupHour.py`, `Taxi_PickupHour.py`, `taxi_duree_prediction.py` et `taxi_duree_prediction.py.py`. Vérifier les noms effectifs avant de copier les commandes.
 5. **Chemins de données** — les sources mentionnent `backend/data/query.csv`, `backend/data/clean/`, `backend/eval/`, ainsi que `frenchcab.db` et un commentaire faisant référence à `french.db`. Confirmer les chemins utilisés par les scripts.
 6. **Modèle et métadonnées** — certaines sections citent `backend/modele_duree_trajet.meta.json`, `backend/modeles` et `backend/config/modele_actif.json`. Vérifier les emplacements et la stratégie de sélection du modèle en production.
 7. **Tests** — le README général indique que les tests backend/API ont été retirés, tandis que le README ML documente 7 tests avec `pytest` et 12 tests unitaires pour le pipeline MLOps. Préciser les suites de tests réellement actives.
