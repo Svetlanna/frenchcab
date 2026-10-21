@@ -18,7 +18,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 
-from Taxi_PichkupHour import (
+from Taxi_PickupHour import (
     DEFAULT_DB,
     VARIABLES_NUMERIQUES,
     VARIABLES_CATEGORIELLES,
@@ -61,7 +61,7 @@ def enregistrer_modele_actif(chemin_modele):
         )
     except ValueError as erreur:
         raise ValueError(
-            "Le modèle doit être situé dans le dossier backend."
+            "Le modèle doit être situé dans le dossier backend/modeles."
         ) from erreur
 
     configuration = {

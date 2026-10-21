@@ -26,7 +26,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
 
 from modele_info import date_fichier, ecrire_meta, lire_infos
-from Taxi_PichkupHour import CHEMIN_MODELE, NOMS_ZONES, construire_variables, nettoyer
+from Taxi_PickupHour import CHEMIN_MODELE, NOMS_ZONES, construire_variables, nettoyer
 
 DOSSIER_EVAL = Path(__file__).resolve().parent.parent / "eval"
 DONNEES_PAR_DEFAUT = DOSSIER_EVAL / "tlc_eval_2026-01.csv"

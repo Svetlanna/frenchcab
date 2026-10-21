@@ -12,13 +12,15 @@ from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parent          # .../frenchcab/backend
 DOSSIER_ML = BACKEND / "ML"
+DOSSIER_MODELES = BACKEND / "modeles"
 DOSSIER_ETL = BACKEND / "etl"
 DB = BACKEND / "data" / "frenchcab.db"
 JEU_EVALUATION = BACKEND / "eval" / "tlc_eval_2026-01.csv"
-MODELE_PRODUCTION = BACKEND / "modele_duree_trajet.joblib"
+MODELE_PRODUCTION = DOSSIER_MODELES / "modele_v1_duree_trajet.joblib"
 SEUIL = DOSSIER_ML / "seuil_qualite.json"
 
 
+DOSSIER_MODELES = BACKEND / "modeles"
 DOSSIER_CANDIDAT = BACKEND / "modeles" / "candidat"
 MODELE_CANDIDAT = DOSSIER_CANDIDAT / "modele_duree_trajet.joblib"
 RAPPORT_CANDIDAT = DOSSIER_CANDIDAT / "rapport_candidat.json"
@@ -88,7 +90,7 @@ def etape_entrainement(args) -> dict:
     """entraîne un NOUVEAU modèle et le range comme candidat"""
     DOSSIER_CANDIDAT.mkdir(parents=True, exist_ok=True)
     lancer_ou_echouer(
-        ["Taxi_PichkupHour.py", str(args.echantillon),
+        ["Taxi_PickupHour.py", str(args.echantillon),
          "--db", str(args.db), "--sortie", str(MODELE_CANDIDAT)],
         DOSSIER_ML, "entraînement en échec")
     return {"modele_candidat": str(MODELE_CANDIDAT.relative_to(BACKEND))}

@@ -5,8 +5,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 
-#from Taxi_PichkupHour import CHEMIN_MODELE, DEFAULT_DB, TABLE_ZONES, TABLE_TRAJETS
-from Taxi_PichkupHour import DEFAULT_DB, TABLE_ZONES, TABLE_TRAJETS
+#from Taxi_PickupHour import CHEMIN_MODELE, DEFAULT_DB, TABLE_ZONES, TABLE_TRAJETS
+from Taxi_PickupHour import DEFAULT_DB, TABLE_ZONES, TABLE_TRAJETS
 from taxi_duree_prediction import construire_course_prediction, charger_modele, predire
 from modele_info import lire_infos
 from datetime import date, time

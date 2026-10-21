@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "data" / "frenchcab.db"
 CHEMIN_MODELE_TARIF = Path(__file__).resolve().parent.parent / "modele" / "modele_frais_trajet.joblib"
 
-from Taxi_PichkupHour import (DEFAULT_DB, GRAINE, NOMS_ZONES, TABLE_TRAJETS, TABLE_ZONES, VARIABLES_CATEGORIELLES, VARIABLES_LOCATIONS, VARIABLES_NUMERIQUES, construire_variables, creer_pipeline, evaluer2)
+from Taxi_PickupHour import (DEFAULT_DB, GRAINE, NOMS_ZONES, TABLE_TRAJETS, TABLE_ZONES, VARIABLES_CATEGORIELLES, VARIABLES_LOCATIONS, VARIABLES_NUMERIQUES, construire_variables, creer_pipeline, evaluer2)
 
 def charger_donnees_tarif(db_path: Path, echantillon: int) -> pd.DataFrame:
     with sqlite3.connect(db_path) as conn:

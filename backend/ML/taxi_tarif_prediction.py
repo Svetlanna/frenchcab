@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from Taxi_PichkupHour import DEFAULT_DB, construire_variables
+from Taxi_PickupHour import DEFAULT_DB, construire_variables
 from Taxi_tarif_entrainement import CHEMIN_MODELE_TARIF
 from taxi_duree_prediction import charger_modele, construire_course_prediction
 

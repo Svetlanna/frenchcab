@@ -10,7 +10,7 @@ from datetime import date, time, datetime
 from pathlib import Path
 
 
-from Taxi_PichkupHour import (CHEMIN_MODELE, DEFAULT_DB, NOMS_ZONES, TABLE_TRAJETS, TABLE_ZONES, construire_variables)
+from Taxi_PickupHour import (CHEMIN_MODELE, DEFAULT_DB, NOMS_ZONES, TABLE_TRAJETS, TABLE_ZONES, construire_variables)
 
 def charger_modele(chemin: Path) -> object:
     if not chemin.exists():

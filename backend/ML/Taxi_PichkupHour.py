@@ -279,6 +279,9 @@ def main() -> None:
     mlflow.set_tracking_uri("http://localhost:5000")
     mlflow.set_experiment("FrenchCab - prediction duree v3")
     
+    #mlflow.set_tracking_uri("http://mlflow:5000")
+    #mlflow.set_experiment("FrenchCab - prediction duree v2")
+    
     t0 = time.time()
 
     df = charger_donnees(a.db, a.echantillon)
