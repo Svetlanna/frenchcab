@@ -119,20 +119,6 @@ Les README décrivent plusieurs vues de l'architecture. Les tableaux ci-dessous 
 | `frontend` | `nginx` | 4200 | Angular |
 | `mlflow` | `mlflow:v3.5.0` | 5000 | API FastAPI (mlops) |
 
-### Service MLflow
-
-MLflow fonctionne dans un conteneur Docker indépendant du backend applicatif.
-
-| Paramètre | Valeur documentée |
-| --- | --- |
-| Port | 5000 |
-| Base de données | SQLite |
-| Stockage des artefacts | `/mlflow/artifacts` |
-| Persistance | Volume Docker |
-
-- Interface web : [http://localhost:5000](http://localhost:5000)
-- Adresse depuis un autre conteneur du même réseau Docker Compose : `http://conteneur-mlflow:5000`
-
 ## Données et dictionnaire métier
 
 ### Source des données
@@ -417,38 +403,6 @@ Course prévue le 2027-03-15 à 10:00 de Bronx/Allerton/Pelham Gardens/Boro Zone
 
 > Remarque : si la course a servi à l'entraînement, le modèle l'a déjà « vue ». La prédiction sera donc un peu trop bonne.
 
-### Routes FastAPI et Backend
-
-
-
-- `GET http://localhost:3001/api/courses` : toutes les courses. La pagination est limitée aux 100 premières courses, car un volume plus important provoque un crash.
-- `GET http://localhost:3001/api/courseID?id=1` : course par identifiant.
-
-```text
-GET /api/prediction/{uid_trajet}
-```
-
-Documentation interactive : [http://localhost:8000/docs](http://localhost:8000/docs).
-
-La documentation décrit également `@app.get("/api/prediction")` comme attendant les paramètres `zone_depart: str`, `zone_arrivee: str`, `date_depart: date` et `heure_depart: time`.
-
-| Route | Code HTTP | Réponse |
-|---|---:|---|
-| `/api/prediction/13` | 200 | JSON de la course |
-| `/api/prediction/99999999` | 404 | `{"detail": "course 99999999 introuvable"}` |
-| `/api/prediction/abc` | 422 | Erreur de validation : ce n'est pas un nombre |
-
-Exemple de réponse documenté :
-
-```json
-{
-  "zone_depart": "Allerton/Pelham Gardens",
-  "zone_arrivee": "Battery Park City",
-  "date_depart": "2027-03-15",
-  "heure_depart": "10:00:00"
-}
-```
-
 ### Lancer FastAPI sans Docker
 
 ```bash
@@ -461,11 +415,10 @@ uvicorn api_prediction:app --reload --port 8000
 
 ### Identifier le modèle utilisé
 
-Les informations sont stockées dans `backend/modele_duree_trajet.meta.json`, à côté du modèle, et exposées par les API :
+Les informations sont stockées dans `backend/modeles/modele_v3_duree_trajet.meta.json`, à côté du modèle, et exposées par les API :
 
 ```text
-GET /modele             (backend, port 3001)
-GET /prediction/modele  (gateway, port 3000)
+GET /prediction/modele (gateway, port 3000) --> GET /modele (backend, port 3001)
 ```
 
 Exemple de réponse :
@@ -519,7 +472,7 @@ Extrait du rapport :
 `mae_baseline_mediane_minutes` est la MAE d'un prédicteur qui répondrait toujours la durée médiane : c'est le point de comparaison du seuil.
 
 | Option | Rôle |
-|---|---|
+| --- | --- |
 | `--donnees <fichier>` | Autre jeu TLC (CSV ou parquet ; parquet demande `pyarrow`) avec les colonnes `tpep_pickup_datetime`, `tpep_dropoff_datetime`, `trip_distance`, `PULocationID`, `DOLocationID` |
 | `--zones <fichier>` | `taxi_zone_lookup.csv` (par défaut `backend/eval/taxi_zone_lookup.csv`) |
 | `--echantillon N` | N'évalue que N courses (0 = toutes) |
@@ -535,7 +488,7 @@ python controle_qualite.py --rapport rapport.json
 ```
 
 | Code retour | Signification |
-|---:|---|
+| ---: | --- |
 | `0` | MAE <= seuil |
 | `1` | MAE > seuil : échec qualité, la CI échoue |
 | `2` | Erreur technique (modèle, données ou rapport introuvables) |
@@ -567,6 +520,7 @@ py pipeline.py
 ```
 
 Le pipeline :
+
 - vérifie les bases et jeux de données ainsi que l'existence d'un seuil de qualité et d'un modèle ML en production ;
 - entraîne et teste le modèle `modele_duree_trajet.joblib` avec un échantillon de 1 017 292 enregistrements ;
 - évalue le modèle candidat et le modèle en production avec un même jeu de données et émet un rapport par version du modèle pour comparaison ;
@@ -583,6 +537,7 @@ python comparer_modeles.py
 ```
 
 Le script compare automatiquement tous les modèles `.joblib` du dossier `backend/modeles` et :
+
 - évalue chaque modèle sur le même jeu de test ;
 - classe les modèles selon leur MAE ;
 - identifie les modèles conformes au seuil de qualité ;
@@ -611,9 +566,17 @@ Exemple de réponse :
 
 ## Service MLflow
 
-### Description
+MLflow fonctionne dans un conteneur Docker indépendant du backend applicatif. Il permet de centraliser les paramètres, les métriques et les artefacts des modèles de prédiction.
 
-Service de suivi des expériences Machine Learning. Il permet de centraliser les paramètres, les métriques et les artefacts des modèles de prédiction.
+| Paramètre | Valeur documentée |
+| --- | --- |
+| Port | 5000 |
+| Base de données SQLite | `/mlflow/mlflow.db` |
+| Stockage des artefacts | `/mlflow/artifacts` |
+| Persistance | Volume Docker |
+
+- Interface web : [http://localhost:5000](http://localhost:5000)
+- Adresse depuis un autre conteneur du même réseau Docker Compose : `http://conteneur-mlflow:5000`
 
 ### Fonctionnalités
 
@@ -622,14 +585,7 @@ Service de suivi des expériences Machine Learning. Il permet de centraliser les
 - Enregistrement des métriques et des paramètres
 - Stockage des modèles entraînés
 
-### Configuration et démarrage
-
-Le service MLflow fonctionne dans un conteneur Docker indépendant du backend applicatif.
-
-- Port : 5000
-- Base de données : SQLite
-- Stockage des artefacts : `/mlflow/artifacts`
-- Persistance : volume Docker
+### Démarrage
 
 Depuis la racine du projet :
 
@@ -645,63 +601,10 @@ Connexion depuis un autre conteneur connecté au même réseau Docker Compose :
 http://mlflow:5000
 ```
 
-## Frontend Angular
-
-Le frontend a été généré avec [Angular CLI](https://github.com/angular/angular-cli) version 22.2.0.
-
-### Serveur de développement
-
-```bash
-ng serve
-```
-
-Une fois le serveur lancé, ouvrir [http://localhost:4200/](http://localhost:4200/). L'application se recharge automatiquement lorsque les fichiers source sont modifiés.
-
-### Génération de composants
-
-```bash
-ng generate component component-name
-```
-
-Pour obtenir la liste complète des schémas disponibles (par exemple `components`, `directives` ou `pipes`) :
-
-```bash
-ng generate --help
-```
-
-### Build
-
-```bash
-ng build
-```
-
-Les artefacts de build sont stockés dans le répertoire `dist/`. Par défaut, le build de production optimise l'application pour la performance et la rapidité.
-
-### Tests unitaires et end-to-end
-
-Tests unitaires avec [Vitest](https://vitest.dev/) :
-
-```bash
-ng test
-```
-
-Pour les tests end-to-end :
-
-```bash
-ng e2e
-```
-
-Angular CLI ne fournit pas de framework end-to-end par défaut ; il est possible d'en choisir un.
-
-Documentation Angular CLI : [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli).
-
 ## CI/CD et tests
 
-Les README citent les fichiers `.github/workflows/ci.yml`, `.github/workflows/cd.yml` et `.github/workflows/ci-cd.yml` selon les sections. Le README général indique que les workflows `ci.yml` et `cd.yml` se trouvent dans le dossier `.github/workflows`.
-
-Une note de mise à jour du groupe 2 indique que les tests backend et les tests API ont été retirés parce qu'ils appelaient une route `Hello!` qui n'existe plus. Le modèle de prédiction avait également été ajouté à `.gitignore`.
-
-La documentation du pipeline ML indique pour sa part que le workflow `.github/workflows/ci-cd.yml` exécute les contrôles de qualité du modèle, construit et publie les images Docker Hub, puis déploie sur la VM. Si le contrôle de qualité échoue, la construction et le déploiement ne sont pas exécutés.
+Le workflow se déclencche aux `push` sur la branche `dev` du repo Github via Github Actions.
+`.github/workflows/ci-cd.yml` exécute les contrôles de qualité du modèle, construit et publie les images Docker Hub, puis les déploie sur la VM. Si le contrôle de qualité échoue, la construction et le déploiement ne sont pas exécutés.
 
 ## Routes Gateway et Backend
 
@@ -723,8 +626,30 @@ Les routes qui interrogent directement la base exposent également les courses, 
 - `GET http://localhost:3001/api/courses` : toutes les courses. La pagination est limitée aux 100 premières courses, car un volume plus important provoque un crash.
 - `GET http://localhost:3001/api/courseID?id=1` : course par identifiant.
 
+```text
+GET /api/prediction/{uid_trajet}
+```
 
+Documentation interactive : [http://localhost:8000/docs](http://localhost:8000/docs).
 
+La documentation décrit également `@app.get("/api/prediction")` comme attendant les paramètres `zone_depart: str`, `zone_arrivee: str`, `date_depart: date` et `heure_depart: time`.
+
+| Route | Code HTTP | Réponse |
+|---|---:|---|
+| `/api/prediction/13` | 200 | JSON de la course |
+| `/api/prediction/99999999` | 404 | `{"detail": "course 99999999 introuvable"}` |
+| `/api/prediction/abc` | 422 | Erreur de validation : ce n'est pas un nombre |
+
+Exemple de réponse documenté :
+
+```json
+{
+  "zone_depart": "Allerton/Pelham Gardens",
+  "zone_arrivee": "Battery Park City",
+  "date_depart": "2027-03-15",
+  "heure_depart": "10:00:00"
+}
+```
 
 
 
