@@ -608,7 +608,7 @@ Le workflow se déclencche aux `push` sur la branche `dev` du repo Github via Gi
 
 ## Routes Gateway et Backend
 
-### Routes exposées sur la passerelle
+### Routes exposées par la passerelle
 
 Celles-ci sont interrogées par le frontend Angular et retransmettent les requêtes au backend Python qui exposent les fonctionnalités grâce à FastAPI
 
@@ -623,24 +623,22 @@ Celles-ci sont interrogées par le frontend Angular et retransmettent les requê
 
 Les routes qui interrogent directement la base exposent également les courses, avec une pagination à 100 premières courses.
 
-- `GET http://localhost:3001/api/courses` : toutes les courses. La pagination est limitée aux 100 premières courses, car un volume plus important provoque un crash.
-- `GET http://localhost:3001/api/courseID?id=1` : course par identifiant.
+### Routes exposées par le backend Python/FastAPI
 
-```text
-GET /api/prediction/{uid_trajet}
+- `GET http://localhost:3001/courses` : toutes les courses. La pagination est limitée aux 100 premières courses, car un volume plus important provoque un crash.
+- `GET http://localhost:3001/courseID` : course par identifiant.
+- `GET http://localhost:3001/modele` : expose les métadonnées du modèle utilisé pour les prédicctions.
+- `GET http://localhost:3001/modele/activer` : permet de modifier le modèle utilisé. La route attend un corps de requête contenant un champ "version" qui contient une chaîne avec le numéro de version :
+
+```json
+{
+  "version": "v2"
+}
 ```
 
-Documentation interactive : [http://localhost:8000/docs](http://localhost:8000/docs).
-
-La documentation décrit également `@app.get("/api/prediction")` comme attendant les paramètres `zone_depart: str`, `zone_arrivee: str`, `date_depart: date` et `heure_depart: time`.
-
-| Route | Code HTTP | Réponse |
-|---|---:|---|
-| `/api/prediction/13` | 200 | JSON de la course |
-| `/api/prediction/99999999` | 404 | `{"detail": "course 99999999 introuvable"}` |
-| `/api/prediction/abc` | 422 | Erreur de validation : ce n'est pas un nombre |
-
-Exemple de réponse documenté :
+- `GET http://localhost:3001/zones` : retourne la liste des zones.
+- `GET http://localhost:3001/prediction` : attend 4 paramètres `zone_depart: str`, `zone_arrivee: str`, `date_depart: date` et `heure_depart: time` et retourne une prédiction du temps de trajet pour une course à venir.
+Exemple de prédiction :
 
 ```json
 {
@@ -651,21 +649,8 @@ Exemple de réponse documenté :
 }
 ```
 
+Documentation interactive : [http://localhost:3001/docs](http://localhost:3001/docs).
 
+## Remarques
 
-
-
-
-## Points à vérifier avant intégration
-
-Les informations suivantes divergent entre les README sources. Elles sont listées ici pour revue et ne sont pas corrigées par hypothèse dans cette fusion.
-
-
-2. **Route de prédiction** — une section documente `GET http://localhost:3001/api/prediction` pour la gateway, tandis que FastAPI est documenté sur le port 8000 avec `GET /api/prediction/{uid_trajet}`. Vérifier les routes réellement exposées par chaque service.
-3. **Fichiers de workflow** — les noms `ci.yml`, `cd.yml` et `ci-cd.yml` sont tous mentionnés. Vérifier les fichiers présents dans `.github/workflows`.
-4. **Noms de scripts** — les sources emploient les variantes `Taxi_PickupHour.py`, `Taxi_PickupHour.py`, `taxi_duree_prediction.py` et `taxi_duree_prediction.py.py`. Vérifier les noms effectifs avant de copier les commandes.
-5. **Chemins de données** — les sources mentionnent `backend/data/query.csv`, `backend/data/clean/`, `backend/eval/`, ainsi que `frenchcab.db` et un commentaire faisant référence à `french.db`. Confirmer les chemins utilisés par les scripts.
-6. **Modèle et métadonnées** — certaines sections citent `backend/modele_duree_trajet.meta.json`, `backend/modeles` et `backend/config/modele_actif.json`. Vérifier les emplacements et la stratégie de sélection du modèle en production.
-7. **Tests** — le README général indique que les tests backend/API ont été retirés, tandis que le README ML documente 7 tests avec `pytest` et 12 tests unitaires pour le pipeline MLOps. Préciser les suites de tests réellement actives.
-8. **Données de démonstration et métriques** — les métriques MAE 3,921 minutes, RMSE 7,174 minutes et R² 0,7225 sont un exemple issu du jeu `tlc_eval_2026-01.csv`. Vérifier qu'elles correspondent toujours au modèle livré.
-9. **Structure réelle** — l'arborescence générale des README est indicative et contient des chemins dont la disposition peut avoir évolué. La comparer au dépôt avant intégration.
+Il manque des routes depuis la gateway (voire depuis le frontend) vers le backend pour les opérations MLOps.
