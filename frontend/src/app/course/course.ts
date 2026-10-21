@@ -72,4 +72,11 @@ export class Course implements OnInit {
   fermerDetails(): void {
     this.courseSelectionnee.set(null);
   }
+
+   ouvrirPrediction(course: CourseModel): void {
+    this.courseSelectionnee.set(course);
+  }
+    fermerPrediction(): void {
+    this.courseSelectionnee.set(null);
+  }
 }

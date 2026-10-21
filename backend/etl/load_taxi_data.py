@@ -81,6 +81,44 @@ def insert_zones(conn: sqlite3.Connection, csv_path: Path, replace: bool) -> Non
     print(f"[{TABLE_ZONES}] {len(rows)} lignes envoyées, " 
           f"{count(conn, TABLE_ZONES)} lignes dans la table") 
  
+ 
+def test_insert_zones(tmp_path: Path) -> None: 
+    """Teste l'insertion des zones, avec et sans remplacement.""" 
+    csv_path = tmp_path / "zones.csv" 
+    csv_path.write_text( 
+        "LocationID,Borough,Zone,service_zone\n" 
+        "1,Manhattan,Nouvelle zone,Yellow\n" 
+        "2,Brooklyn,Zone Brooklyn,Boro\n", 
+        encoding="utf-8", 
+    ) 
+ 
+    conn = sqlite3.connect(":memory:") 
+    try: 
+        conn.execute( 
+            "CREATE TABLE localisations " 
+            "(LocationID INTEGER PRIMARY KEY, Borough TEXT, Zone TEXT, service_zone TEXT)" 
+        ) 
+        conn.execute( 
+            "INSERT INTO localisations VALUES " 
+            "(1, 'Manhattan', 'Zone existante', 'Yellow')" 
+        ) 
+ 
+        insert_zones(conn, csv_path, replace=False) 
+        assert conn.execute( 
+            "SELECT Zone FROM localisations WHERE LocationID = 1" 
+        ).fetchone() == ("Zone existante",) 
+        assert conn.execute( 
+            "SELECT Zone FROM localisations WHERE LocationID = 2" 
+        ).fetchone() == ("Zone Brooklyn",) 
+ 
+        insert_zones(conn, csv_path, replace=True) 
+        assert conn.execute( 
+            "SELECT Zone FROM localisations WHERE LocationID = 1" 
+        ).fetchone() == ("Nouvelle zone",) 
+    finally: 
+        conn.close() 
+ 
+ 
 # ------------------------------------------------------------------ trajets 
  
 def insert_trajets(conn: sqlite3.Connection, csv_path: Path, mode: str, 

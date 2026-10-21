@@ -11,11 +11,42 @@ services:
       args:
         BUILD_CONFIG: development
     container_name: conteneur-front
-    
-    
+  
     volumes:
       - ./frontend:/app
   
   gateway:
     build: ./gateway
     container_name: conteneur-gateway
+  
+  mlflow:
+    build:
+      context: ./mlflow
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      #MLFLOW_SERVER_ALLOWED_HOSTS: "localhost,localhost:5000,127.0.0.1,127.0.0.1:5000,conteneur-back,conteneur-back:5000"
+       MLFLOW_SERVER_ALLOWED_HOSTS: "localhost:5000,localhost:*,127.0.0.1:*"
+    command:
+      - mlflow
+      - server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --backend-store-uri
+      - sqlite:////mlflow/mlflow.db
+      - --artifacts-destination
+      - /mlflow/artifacts
+      - --allowed-hosts
+      - "localhost:5000,localhost:*,127.0.0.1:*"
+      - --cors-allowed-origins
+      - "http://localhost:4200"
+
+    volumes:
+      - mlflow_data:/mlflow
+    restart: unless-stopped
+
+volumes:
+  mlflow_data:

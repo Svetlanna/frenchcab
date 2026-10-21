@@ -117,7 +117,7 @@ backend/
 ├── data/
 │   └── frenchcab.db                  ← base SQLite (tables trajets + localisations)
 └── ML/
-    ├── Taxi_PichkupHour.py          ← 1. entraînement du modèle
+    ├── Taxi_PickupHour.py          ← 1. entraînement du modèle
     ├── modele_duree_trajet.joblib   ←    modèle sauvegardé
     ├── taxi_duree_prediction.py.py     ← 2. prédiction d'une course par (zone_depart, zone_arrivee, date, heure)
     ├── api_prediction.py            ← 3. API FastAPI
@@ -129,7 +129,7 @@ backend/
 Le chemin complet :
 
 ```
-frenchcab.db ──► Taxi_PichkupHour.py ──► modele_duree_trajet.joblib
+frenchcab.db ──► Taxi_PickupHour.py ──► modele_duree_trajet.joblib
                                                │
                        taxi_duree_prediction.py.py ◄┘
                                 │
@@ -140,7 +140,7 @@ frenchcab.db ──► Taxi_PichkupHour.py ──► modele_duree_trajet.joblib
 
 ---
 
-## 1. Le modèle — `Taxi_PichkupHour.py`
+## 1. Le modèle — `Taxi_PickupHour.py`
 
 ### Le but
 
@@ -192,9 +192,9 @@ Le **Pipeline** regroupe la préparation des données et le modèle dans **un se
 
 ```bash
 cd backend/ML
-python Taxi_PichkupHour.py                  # avec la distance (1 million de courses)
-python Taxi_PichkupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
-python Taxi_PichkupHour.py --sans-distance  # seulement les zones et l'heure
+python Taxi_PickupHour.py                  # avec la distance (1 million de courses)
+python Taxi_PickupHour.py 2000000          # échantillon plus grand (0 = toutes les courses)
+python Taxi_PickupHour.py --sans-distance  # seulement les zones et l'heure
 ```
 
 ## 2. La prédiction — `taxi_duree_prediction.py`
@@ -211,10 +211,10 @@ Ce fichier **utilise** le modèle déjà entraîné. Il ne réentraîne rien
 
 Points importants :
 
-- Les constantes et `construire_variables` sont **importées** depuis `Taxi_PichkupHour.py`
+- Les constantes et `construire_variables` sont **importées** depuis `Taxi_PickupHour.py`
   Ainsi, l'entraînement et la prédiction préparent les données exactement de la même façon
 - `modele.feature_names_in_` donne la liste des colonnes vues pendant l'entraînement, on donne au modèle exactement ces colonnes, dans le même ordre
-- Le `if __name__ == "__main__":` de `Taxi_PichkupHour.py` empêche l'entraînement de se relancer quand on importe ce fichier
+- Le `if __name__ == "__main__":` de `Taxi_PickupHour.py` empêche l'entraînement de se relancer quand on importe ce fichier
 
 ### Lancer
 
@@ -330,7 +330,7 @@ CMD ["uvicorn", "api_prediction:app", "--host", "0.0.0.0", "--port", "8000"]
 
 - `ports "8000:8000"` : le port 8000 du PC mène au port 8000 du conteneur
 
-### Lancer
+### Démarrer le projet
 
 ```bash
 cd C:\python-projs\frenchcab
@@ -341,11 +341,10 @@ Puis ouvrir [http://localhost:8000/api/prediction/13](http://localhost:8000/api/
 
 ## Ordre de lancement (résumé)
 
-1. `python Taxi_PichkupHour.py` → crée le modèle `.joblib` (seulement si les données changent)
+1. `python Taxi_PickupHour.py` → crée le modèle `.joblib` (seulement si les données changent)
 2. `python taxi_duree_prediction.py.py` → vérifie qu'une prédiction marche
 3. `uvicorn api_prediction:app --port 8000` → vérifie l'API sans Docker
 4. `docker compose up --build` → lance tout : backend, ml et frontend
-
 
 ## 5. Identification, évaluation et contrôle qualité du modèle
 
@@ -353,7 +352,7 @@ Puis ouvrir [http://localhost:8000/api/prediction/13](http://localhost:8000/api/
 
 Les informations sont stockées dans `backend/modele_duree_trajet.meta.json`, à côté du modèle, et exposées par l'API :
 
-```
+```text
 GET /modele                      (backend, port 3001)
 GET /prediction/modele           (gateway, port 3000)
 ```
@@ -407,7 +406,7 @@ Extrait du rapport :
 `mae_baseline_mediane_minutes` est la MAE d'un prédicteur qui répondrait toujours la durée médiane : c'est le point de comparaison du seuil.
 
 | Option | Rôle |
-|---|---|
+| --- | --- |
 | `--donnees <fichier>` | autre jeu TLC (CSV ou parquet ; parquet demande `pyarrow`) avec les colonnes `tpep_pickup_datetime`, `tpep_dropoff_datetime`, `trip_distance`, `PULocationID`, `DOLocationID` |
 | `--zones <fichier>` | `taxi_zone_lookup.csv` (par défaut `backend/eval/taxi_zone_lookup.csv`) |
 | `--echantillon N` | n'évalue que N courses (0 = toutes) |
@@ -423,7 +422,7 @@ python controle_qualite.py --rapport rapport.json   # à partir d'un rapport exi
 ```
 
 | Code retour | Signification |
-|---|---|
+| --- | --- |
 | `0` | MAE <= seuil |
 | `1` | MAE > seuil : échec qualité, la CI échoue |
 | `2` | erreur technique (modèle, données ou rapport introuvables) |
@@ -438,9 +437,75 @@ Le seuil (5,0 min) et sa justification sont dans `seuil_qualite.json` : environ 
 ### Après un réentraînement
 
 ```bash
-python Taxi_PichkupHour.py 200000
+python Taxi_PickupHour.py 200000
 python evaluation_modele.py --maj-metadonnees
 curl http://localhost:3001/modele
 ```
 
 La version change, la date d'entraînement est enregistrée et la MAE sur le jeu TLC est mise à jour. Commiter ensuite le `.joblib` et son `.meta.json` ensemble.
+
+## 6. MLOps workflow
+
+Pour lancer la comparaison du modèle en production et du modèle 'candidat', dans le terminal depuis la racine du projet :
+
+```bash
+cd backend/
+py pipeline.py
+```
+
+Le pipeline :
+
+* vérifie les bases et jeux de données ainsi que l'existence d'un seuil de qualité et d'un modèle ML en production
+* entraîne et teste le modèle modele_duree_trajet.joblib avec un échantillon de 1017292 enregistrements 
+* évalue le modèle 'candidat' et le modèle en production avec un même jeu de données et émet un rapport par version du modèle pour comparaison
+* effectue un contrôle de la qualité du modèle 'candidat' et met à jour le 'rapport_candidat' émis pendant son évaluation
+* effectue les 12 tests unitaires du pipeline
+* effectue une prédiction avec le modèle candidat pour comparaison avec le modèle en production
+* affiche dans la console et dans un fichier JSON le résumé de l'exécution du pipeline ainsi que la comparaison des 2 modèles
+
+
+### Comparaison entre la version actuelle du modéle et une version candidate `comparer_modeles.py`
+
+```bash
+cd backend/ML
+python comparer_modeles.py 
+
+```
+
+Le script compare automatiquement tous les modèles ```.joblib``` contenus dans le dossier backend/modeles.
+A l'exécution, il :
+
+<<<<<<< HEAD
+le modéle actif se trouve  dans backend/config/modele_actif.json la version qui est utilisée par frenchcab pour prédire les courses.
+
+
+Pour changer de version, il suffit de lancer la route : 
+          
+POST /modele/activer  (backend, port 3001) avec la version dans le body
+ 
+```json
+{
+  "version": "v2"
+}
+```
+Exemple de réponse :
+
+```json
+{
+  "message": "Modèle activé avec succès.",
+  "version": "v2",
+  "fichier": "modele_v2_duree_trajet.joblib"
+}
+```
+
+=======
+* Évalue chaque modèle sur le même jeu de test.
+* Classe les modèles selon leur MAE.
+* Identifie les modèles conformes au seuil de qualité.
+* Active le meilleur modèle conforme dans config/modele_actif.json.
+* Conserve la configuration existante si aucun modèle n'est conforme.
+
+Le modéle actif se trouve dans backend/config/modele_actif.json. Le modèle actif correspond à la version qui est utilisée par frenchcab pour prédire ses courses.
+
+Pour changer de version, il suffit de changer le modéle dans ce fichier.
+>>>>>>> thomas

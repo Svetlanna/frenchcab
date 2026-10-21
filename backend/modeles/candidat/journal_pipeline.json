@@ -1,0 +1,21 @@
+{
+  "debut": "2026-10-21T11:16:47",
+  "etapes_demandees": [
+    "verification",
+    "entrainement",
+    "evaluation",
+    "controle",
+    "tests",
+    "prediction"
+  ],
+  "etapes": [
+    {
+      "nom": "verification",
+      "statut": "ECHEC",
+      "message": "fichiers introuvables ->",
+      "duree_s": 0.0
+    }
+  ],
+  "resultat": "ERREUR TECHNIQUE : voir l'étape en échec",
+  "fin": "2026-10-21T11:16:47"
+}
