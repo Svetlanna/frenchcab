@@ -1,7 +1,5 @@
 # Frenchcab — Documentation unifiée
 
-> **Document de travail pour revue.** Ce fichier rassemble les informations des README du projet sans remplacer les README existants. Les répétitions ont été regroupées et les informations techniques divergentes ont été conservées et signalées dans la section [Points à vérifier](#points-à-vérifier-avant-intégration), plutôt que corrigées silencieusement.
-
 ## Sommaire
 
 - [Présentation et ressources](#présentation-et-ressources)
@@ -13,10 +11,8 @@
 - [Modèle de prédiction](#modèle-de-prédiction)
 - [Évaluation, contrôle qualité et MLOps](#évaluation-contrôle-qualité-et-mlops)
 - [Service MLflow](#service-mlflow)
-- [Frontend Angular](#frontend-angular)
 - [CI/CD et tests](#cicd-et-tests)
 - [Routes Gateway & Backend](#routes-gateway-et-backend)
-- [Points à vérifier avant intégration](#points-à-vérifier-avant-intégration)
 
 ## Présentation et ressources
 
@@ -608,7 +604,7 @@ Le workflow se déclencche aux `push` sur la branche `dev` du repo Github via Gi
 
 ## Routes Gateway et Backend
 
-### Routes exposées par la passerelle
+### Routes exposées sur la passerelle
 
 Celles-ci sont interrogées par le frontend Angular et retransmettent les requêtes au backend Python qui exposent les fonctionnalités grâce à FastAPI
 
@@ -623,22 +619,24 @@ Celles-ci sont interrogées par le frontend Angular et retransmettent les requê
 
 Les routes qui interrogent directement la base exposent également les courses, avec une pagination à 100 premières courses.
 
-### Routes exposées par le backend Python/FastAPI
+- `GET http://localhost:3001/api/courses` : toutes les courses. La pagination est limitée aux 100 premières courses, car un volume plus important provoque un crash.
+- `GET http://localhost:3001/api/courseID?id=1` : course par identifiant.
 
-- `GET http://localhost:3001/courses` : toutes les courses. La pagination est limitée aux 100 premières courses, car un volume plus important provoque un crash.
-- `GET http://localhost:3001/courseID` : course par identifiant.
-- `GET http://localhost:3001/modele` : expose les métadonnées du modèle utilisé pour les prédicctions.
-- `GET http://localhost:3001/modele/activer` : permet de modifier le modèle utilisé. La route attend un corps de requête contenant un champ "version" qui contient une chaîne avec le numéro de version :
-
-```json
-{
-  "version": "v2"
-}
+```text
+GET /api/prediction/{uid_trajet}
 ```
 
-- `GET http://localhost:3001/zones` : retourne la liste des zones.
-- `GET http://localhost:3001/prediction` : attend 4 paramètres `zone_depart: str`, `zone_arrivee: str`, `date_depart: date` et `heure_depart: time` et retourne une prédiction du temps de trajet pour une course à venir.
-Exemple de prédiction :
+Documentation interactive : [http://localhost:8000/docs](http://localhost:8000/docs).
+
+La documentation décrit également `@app.get("/api/prediction")` comme attendant les paramètres `zone_depart: str`, `zone_arrivee: str`, `date_depart: date` et `heure_depart: time`.
+
+| Route | Code HTTP | Réponse |
+| --- | ---: | --- |
+| `/api/prediction/13` | 200 | JSON de la course |
+| `/api/prediction/99999999` | 404 | `{"detail": "course 99999999 introuvable"}` |
+| `/api/prediction/abc` | 422 | Erreur de validation : ce n'est pas un nombre |
+
+Exemple de réponse documenté :
 
 ```json
 {
@@ -648,9 +646,3 @@ Exemple de prédiction :
   "heure_depart": "10:00:00"
 }
 ```
-
-Documentation interactive : [http://localhost:3001/docs](http://localhost:3001/docs).
-
-## Remarques
-
-Il manque des routes depuis la gateway (voire depuis le frontend) vers le backend pour les opérations MLOps.
