@@ -22,9 +22,9 @@ const mlflowProxy = createProxyMiddleware({
   pathRewrite: {
     "^/mlflow": "",
   },
-  /* onProxyReq: (proxyReq, req, res) => {
+  onProxyReq: (proxyReq, req, res) => {
     // Injection de headers éventuels ... authentification ou security token
-  }, */
+  },
   onError: (err, req, res) => {
     console.error("Erreur Proxxy Mlflow:", err);
     res.status(500).send("La gateway n'a pas pu joindre le serveur MLFlow");
