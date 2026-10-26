@@ -9,7 +9,6 @@ export class CourseService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiBaseUrl}/course/courses`;
   
-
   getCourses(page: number, limit: number): Observable<CoursesResponse> {
     console.log(environment.apiBaseUrl, this.apiUrl)
     const params = new HttpParams()

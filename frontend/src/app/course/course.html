@@ -1,6 +1,6 @@
 <div class="courses-container">
   <h1>Liste des courses</h1>
-  <app-trip-popup />
+  <!-- <app-trip-popup /> -->
 
   @if (erreur()) {
     <p style="color: red">{{ erreur() }}</p>
@@ -41,7 +41,6 @@
               <td>{{ course.total_amount | currency: 'USD' }}</td>
               <td>
                 <button class="details-button" (click)="ouvrirDetails(course)">Détails</button>
-                <button class="prediction-button" (click)="ouvrirPrediction(course)">Prédiction</button>
               </td>
             </tr>
           } @empty {

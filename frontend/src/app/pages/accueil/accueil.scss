@@ -1,0 +1,105 @@
+
+:host {
+  display: block;
+}
+
+.welcome {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+h1 {
+  max-width: 700px;
+  margin: 16px 0;
+  color: #172338;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.2;
+}
+
+.intro {
+  max-width: 680px;
+  margin-bottom: 35px;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.feature-card {
+  padding: 24px;
+  border: 1px solid #e5eaf1;
+  border-radius: 15px;
+  background: white;
+  box-shadow: 0 5px 18px rgb(15 23 42 / 3%);
+}
+
+.feature-icon {
+  display: grid;
+  place-items: center;
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  font-size: 23px;
+}
+
+.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.purple {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+.green {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.feature-card h2 {
+  margin: 20px 0 10px;
+  font-size: 18px;
+}
+
+.feature-card p {
+  min-height: 90px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.feature-card a {
+  display: inline-block;
+  margin-top: 10px;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.feature-card a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-card p {
+    min-height: auto;
+  }
+}

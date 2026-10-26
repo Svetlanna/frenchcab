@@ -47,7 +47,7 @@ export class Course implements OnInit {
       },
       error: (err) => {
         console.error(err);
-        this.erreur.set("Impossible de charger les courses (le backend tourne-t-il sur le port 3001 ?)");
+        this.erreur.set("Impossible de charger les courses (le backend tourne-t-il sur le port 3000 ?)");
         this.chargement.set(false);
       },
     });
