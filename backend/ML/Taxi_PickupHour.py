@@ -31,6 +31,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 import mlflow
 import mlflow.sklearn
+from mlflow.tracking import MlflowClient
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -274,6 +275,9 @@ def main() -> None:
                    help="fichier .joblib à écrire (défaut : modèle en production)")
 
     a = p.parse_args()
+
+    # On récupère le numéro de version du dernier modèle actif
+    
     
     # Configuration MLflow
     mlflow.set_tracking_uri("http://conteneur-mlflow:5000")
