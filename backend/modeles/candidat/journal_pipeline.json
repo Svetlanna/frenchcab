@@ -1,5 +1,5 @@
 {
-  "debut": "2026-10-21T11:16:47",
+  "debut": "2026-10-26T13:42:12",
   "etapes_demandees": [
     "verification",
     "entrainement",
@@ -11,11 +11,17 @@
   "etapes": [
     {
       "nom": "verification",
-      "statut": "ECHEC",
-      "message": "fichiers introuvables ->",
+      "details": {},
+      "statut": "OK",
       "duree_s": 0.0
+    },
+    {
+      "nom": "entrainement",
+      "statut": "ECHEC",
+      "message": "entraînement en échec (code 1)",
+      "duree_s": 267.9
     }
   ],
   "resultat": "ERREUR TECHNIQUE : voir l'étape en échec",
-  "fin": "2026-10-21T11:16:47"
+  "fin": "2026-10-26T13:46:39"
 }
