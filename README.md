@@ -508,7 +508,7 @@ La version change, la date d'entraînement est enregistrée et la MAE sur le jeu
 
 ### Pipeline MLOps — `pipeline.py`
 
-Pour lancer la comparaison du modèle en production et du modèle candidat, depuis la racine du projet :
+Pour lancer la comparaison du modèle en production et du modèle candidat, depuis la racine du service backend (frenchcab/backend) :
 
 ```bash
 cd backend/
