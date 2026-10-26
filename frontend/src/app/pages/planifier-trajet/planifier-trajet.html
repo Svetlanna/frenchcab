@@ -1,0 +1,140 @@
+ <div class="planning-page">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">VOTRE DÉPLACEMENT</span>
+      <h1>Planifier un trajet</h1>
+      <p> Préparez votre itinéraire et obtenez une estimation de sa durée grace à l'IA.</p>
+    </div>
+    
+  </div>
+
+  <div class="planning-layout">
+    <section class="planning-card">
+      <div class="card-heading">
+        <div class="heading-symbol">⌖</div>
+        <div>
+          <h2>Votre itinéraire</h2>
+          <p>Renseignez les informations du déplacement.</p>
+        </div>
+      </div>
+
+      <div class="route-step">
+        <span class="step-dot departure"></span>
+        <span>Point de départ</span>
+      </div>
+
+      <label for="depart">Zone de départ</label>
+      <select id="depart" [(ngModel)]="departId">
+        <option [ngValue]="null" disabled>Choisir une zone de départ</option>
+        @for (zone of zones(); track zone.id) {
+          <option [ngValue]="zone.id">{{ zone.nom }}</option>
+        }
+      </select>
+
+      <div class="route-connector"></div>
+
+      <div class="route-step">
+        <span class="step-dot arrival"></span>
+        <span>Destination</span>
+      </div>
+
+      <label for="arrivee">Zone d'arrivée</label>
+      <select id="arrivee" [(ngModel)]="arriveeId">
+        <option [ngValue]="null" disabled>Choisir une zone d'arrivée</option>
+        @for (zone of zones(); track zone.id) {
+          <option [ngValue]="zone.id">{{ zone.nom }}</option>
+        }
+      </select>
+
+      <div class="date-section">
+        <label for="dateDepart">Date et heure de départ</label>
+        <input
+          id="dateDepart"
+          type="datetime-local"
+          [(ngModel)]="dateDepart"
+        />
+      </div>
+
+      @if (erreur()) {
+        <div class="error-message" role="alert">
+          <span>!</span>
+          {{ erreur() }}
+        </div>
+      }
+
+      <button
+        class="btn-valider"
+        (click)="valider()"
+        [disabled]="chargement()"
+      >
+        @if (chargement()) {
+          <span class="spinner"></span>
+          Calcul en cours...
+        } @else {
+          Estimer mon trajet
+          <span>→</span>
+        }
+      </button>
+
+      <p class="form-note">Les résultats sont des estimations de trajet.</p>
+    </section>
+
+    <aside class="info-column">
+      <div class="info-card">
+        <div class="info-icon">✦</div>
+        <h3>Anticipez votre déplacement</h3>
+        <p>
+          Sélectionnez vos zones de départ et d'arrivée ainsi que votre horaire
+          pour obtenir une estimation de la durée du trajet.
+        </p>
+      </div>
+
+      @if (resultat(); as r) {
+        <div class="result-card">
+          <div class="result-header">
+            <span class="result-indicator"></span>
+            <span>ESTIMATION DISPONIBLE</span>
+          </div>
+
+          <h3>Votre trajet</h3>
+
+          <div class="result-route">
+            <div class="result-point">
+              <span class="step-dot departure"></span>
+              <div>
+                <small>Départ</small>
+                <strong>{{ r.depart }}</strong>
+                <span>{{ r.dateDepart | date:'dd/MM/yyyy à HH:mm' }}</span>
+              </div>
+            </div>
+
+            <div class="result-line"></div>
+
+            <div class="result-point">
+              <span class="step-dot arrival"></span>
+              <div>
+                <small>Arrivée</small>
+                <strong>{{ r.arrivee }}</strong>
+                <span>{{ r.dateArrivee | date:'dd/MM/yyyy à HH:mm' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="duration-box">
+            <span>Durée estimée</span>
+            <strong>{{ r.duree }} <small>min</small></strong>
+          </div>
+        </div>
+      } @else {
+        <div class="empty-result">
+          <div class="empty-icon">◷</div>
+          <h3>Votre estimation apparaîtra ici</h3>
+          <p>
+            Complétez le formulaire puis cliquez sur « Estimer mon trajet »
+            pour afficher les résultats.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+</div>

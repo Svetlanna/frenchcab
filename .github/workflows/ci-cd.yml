@@ -154,6 +154,7 @@ jobs:
             cd /home/groupe1/frenchcab
 
             # Nouvelles images depuis Docker Hub, puis redémarrage
+            docker system prune -af
             docker compose pull
             docker compose up -d
 

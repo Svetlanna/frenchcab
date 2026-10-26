@@ -9,14 +9,14 @@ async function getTests() {
 
     try {
 
-        const response = await axios.get(`${PYTHON_SERVICE_URL}/test`);
+        const response = await axios.get(`${PYTHON_SERVICE_URL}/modele`);
  
         return response.data;
 
     } catch (error) {
 
-        console.log(error.message);
-
+        console.log(error.message, PYTHON_SERVICE_URL);
+        console.log("PYTHON SERVICE URL", PYTHON_SERVICE_URL);
         throw new Error("Impossible de contacter l'API");    
     }
 }

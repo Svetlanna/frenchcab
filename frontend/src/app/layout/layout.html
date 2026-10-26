@@ -1,0 +1,57 @@
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">🚕</div>
+      <div class="brand-text">
+        <h2>FRENCH<span>CAB</span></h2>
+       
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <p class="menu-label">MENU PRINCIPAL</p>
+
+    <nav class="navigation">
+      <a
+        routerLink="/"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <span class="nav-icon">⌂</span>
+        <span>Accueil</span>
+      </a>
+
+      <a routerLink="/course" routerLinkActive="active">
+        <span class="nav-icon">☷</span>
+        <span>Liste des courses</span>
+      </a>
+
+      <a routerLink="/planifier" routerLinkActive="active">
+        <span class="nav-icon">↗</span>
+        <span>Planifier un trajet</span>
+      </a>
+    </nav>
+
+   
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <!-- <span class="topbar-eyebrow">ESPACE DE GESTION</span> -->
+        <h1>Tableau de bord</h1>
+      </div>
+
+      <div class="topbar-brand">
+        <span class="topbar-taxi">🚕</span>
+        <span>FRENCH<strong>CAB</strong></span>
+      </div>
+    </header>
+
+    <section class="page-content">
+      <router-outlet />
+    </section>
+  </main>
+</div>

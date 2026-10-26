@@ -1,1 +1,93 @@
 /* You can add global styles to this file, and also import other style files */
+
+:root {
+  --app-font: 'Inter', 'Segoe UI', Arial, sans-serif;
+  --app-font-size: 16px;
+  --app-text: #263247;
+  --app-muted: #64748b;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  font-family: var(--app-font);
+  font-size: var(--app-font-size);
+  line-height: 1.6;
+  color: var(--app-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Les éléments héritent de la police globale */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Textes courants */
+p,
+label,
+li,
+td,
+th {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Titres */
+h1 {
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+h2 {
+  font-size: 1.5rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 1.2rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+/* Champs et boutons plus lisibles */
+input,
+select,
+textarea,
+button {
+  font-size: 1rem;
+}
+
+button {
+  font-weight: 600;
+}
+
+/* Textes secondaires : rester lisibles */
+small,
+.caption,
+.form-note {
+  font-size: 0.875rem;
+}
+
+/* Écrans étroits */
+@media (max-width: 600px) {
+  html {
+    font-size: 15px;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.35rem;
+  }
+}
